@@ -1,0 +1,74 @@
+plugins {
+    id 'java'
+    id 'eclipse'
+    id "org.jetbrains.gradle.plugin.idea-ext" version "1.0.1"
+    // This plugin copies the classes from JDA into our JAR so they're accessible at runtime
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+}
+
+group = 'com.aaronjamt'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+    maven {
+        name = "papermc-repo"
+        url = "https://repo.papermc.io/repository/maven-public/"
+    }
+}
+
+dependencies {
+    compileOnly "com.velocitypowered:velocity-api:3.3.0-SNAPSHOT"
+    annotationProcessor "com.velocitypowered:velocity-api:3.3.0-SNAPSHOT"
+
+    implementation("club.minnced:discord-webhooks:0.8.4")
+    shadow implementation("net.dv8tion:JDA:5.0.0-beta.24")
+    shadow implementation ("org.xerial:sqlite-jdbc:3.46.0.0")
+    shadow 'org.xerial:sqlite-jdbc:3.46.0.0'
+    implementation 'org.tomlj:tomlj:1.1.1'
+
+}
+
+ task copyJar(type: Exec) {
+    commandLine '/bin/bash', '-c', 'cp /home/aaronjamt/Documents/IdeaProjects/MinecraftDiscordPlugin/build/libs/MinecraftDiscordPlugin-1.0-SNAPSHOT-all.jar /home/aaronjamt/Downloads/mc/proxy-data/plugins/'
+}
+
+task restartProxy(type: Exec) {
+    commandLine '/usr/bin/env', '--', 'flatpak-spawn', '--host', 'docker', 'restart', 'mc_proxy_1'
+}
+
+def targetJavaVersion = 17
+java {
+    def javaVersion = JavaVersion.toVersion(targetJavaVersion)
+    sourceCompatibility = javaVersion
+    targetCompatibility = javaVersion
+    if (JavaVersion.current() < javaVersion) {
+        toolchain.languageVersion = JavaLanguageVersion.of(targetJavaVersion)
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+
+    if (targetJavaVersion >= 10 || JavaVersion.current().isJava10Compatible()) {
+        options.release.set(targetJavaVersion)
+    }
+}
+
+def templateSource = file('src/main/templates')
+def templateDest = layout.buildDirectory.dir('generated/sources/templates')
+def generateTemplates = tasks.register('generateTemplates', Copy) { task ->
+    def props = [
+            'version': project.version
+    ]
+    task.inputs.properties props
+
+    task.from templateSource
+    task.into templateDest
+    task.expand props
+}
+
+sourceSets.main.java.srcDir(generateTemplates.map { it.outputs })
+
+rootProject.idea.project.settings.taskTriggers.afterSync generateTemplates
+project.eclipse.synchronizationTasks(generateTemplates)
