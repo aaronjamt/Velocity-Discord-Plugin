@@ -149,7 +149,11 @@ public class DiscordBot extends ListenerAdapter {
 
         // We can't do much without a valid Discord channel
         if (chatChannel == null) {
-            logger.error("Error: No such Discord channel with ID: {}. Please make sure you set the ID of the channel in the config file, and that the bot has access to it.", chatChannelId);
+            logger.error("Error: No such Discord channel with ID: {}. " +
+                    "Please make sure you set the ID of the channel in the config file," +
+                            " and that the bot has access to it.",
+                    chatChannelId
+            );
             throw new RuntimeException("Invalid Discord channel ID");
         }
 
