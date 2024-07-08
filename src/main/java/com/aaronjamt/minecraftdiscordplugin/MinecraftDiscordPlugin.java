@@ -137,17 +137,26 @@ public class MinecraftDiscordPlugin  {
 
     @Subscribe
     public void onConnect(ServerConnectedEvent event) {
-        // Don't announce join event if they just switched between servers
-        if (event.getPreviousServer().isPresent()) return;
-
-        // Send a message to all players and to Discord announcing that the player joined
+        // Send a message to all players and to Discord announcing that the player joined/switched servers
         Player player = event.getPlayer();
         String mcName = player.getUsername();
-        String mcIcon = String.format("https://heads.discordsrv.com/head.png?texture=&uuid=%s&name=%s&overlay", player.getUniqueId().toString().replaceAll("-",""), mcName);
-        String message = config.minecraftPlayerJoinMessage.replace("{username}", mcName);
+        String mcIcon = String.format("https://heads.discordsrv.com/head.png?texture=&uuid=%s&name=%s&overlay", player.getUniqueId().toString().replaceAll("-", ""), mcName);
+        String message;
+        Color discordColor;
+        // If they were already on a different server, show a "server switch" message instead
+        if (event.getPreviousServer().isPresent()) {
+            message = config.minecraftPlayerSwitchServersMessage
+                    .replace("{username}", mcName)
+                    .replace("{new_server}", event.getServer().getServerInfo().getName())
+                    .replace("{old_server}", event.getPreviousServer().get().getServerInfo().getName());
+            discordColor = Color.blue;
+        } else {
+            message = config.minecraftPlayerJoinMessage.replace("{username}", mcName);
+            discordColor = Color.green;
+        }
         sendMessageToAll(message);
 
-        discordBot.sendAnnouncement(Color.green, message, mcName, mcIcon);
+        discordBot.sendAnnouncement(discordColor, message, mcName, mcIcon);
     }
 
     @Subscribe

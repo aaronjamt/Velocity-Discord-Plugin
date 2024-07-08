@@ -12,6 +12,7 @@ public class Config {
     public final String discordBotChannel = "1259427811903537194";
     public final String minecraftPlayerJoinMessage = "{username} has joined the network!";
     public final String minecraftPlayerJoinUnlinkedMessage = "Welcome to the server, {username}! Click the button below and enter your link code to link your Discord and Minecraft accounts!";
+    public final String minecraftPlayerSwitchServersMessage = "{username} joined the {new_server} server!";
     public final String minecraftNewPlayerMessage = "Welcome to the server, {username}!"; // The minecraftPlayerJoinUnlinkedMessage is swapped for this when the account is linked
     public final String minecraftPlayerLeaveMessage = "{username} has left the network!";
     public final String playerNeedsToLinkMessage = "Please link your Discord account!\nCheck the Discord server for details.\n\nLink code:\n{code}";
