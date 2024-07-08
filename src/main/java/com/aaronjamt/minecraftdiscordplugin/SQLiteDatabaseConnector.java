@@ -6,7 +6,9 @@ import java.io.File;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.sql.*;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 import org.sqlite.SQLiteDataSource;
 
@@ -186,24 +188,25 @@ public class SQLiteDatabaseConnector {
             throw new RuntimeException(e);
         }
     }
-/*
+
     // Below are the helper methods to perform various actions
     public List<String> getAllUsersWithOfflineMessaging() {
+        List<String> result = new ArrayList<>();
         try {
             PreparedStatement preparedStatement = connection.prepareStatement(
                     "SELECT minecraftUser FROM discord WHERE offlineDiscordDMs = 1;"
             );
             ResultSet resultSet = preparedStatement.executeQuery();
-            if (resultSet != null) {
-                return resultSet.getObject(1);
+            while (resultSet.next()) {
+                result.add(resultSet.getString(1));
             }
-            return null;
+            return result;
         } catch (SQLException e) {
-            logger.error("Unable to get value for column '{}' given column '{}' = '{}'! SQLException message: '{}'\n\tException: {}", targetColumn, searchColumn, searchValue, e.getMessage(), Arrays.toString(e.getStackTrace()));
+            logger.error("Unable to get users with offline messaging! SQLException message: '{}'\n\tException: {}", e.getMessage(), Arrays.toString(e.getStackTrace()));
             throw new RuntimeException(e);
         }
     }
-*/
+
     // Methods to get a Minecraft UUID, given other information
     public UUID getAccountFromDiscord(@Nonnull String discordId) {
         String result = (String) getColumnFrom(DatabaseColumns.discordId, discordId, DatabaseColumns.minecraftUUID);

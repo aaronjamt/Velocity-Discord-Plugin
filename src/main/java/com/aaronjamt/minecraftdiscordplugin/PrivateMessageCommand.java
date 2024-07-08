@@ -3,10 +3,7 @@ package com.aaronjamt.minecraftdiscordplugin;
 import com.velocitypowered.api.command.SimpleCommand;
 import com.velocitypowered.api.proxy.Player;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 public class PrivateMessageCommand implements SimpleCommand {
     protected final MinecraftDiscordPlugin plugin;
@@ -103,9 +100,18 @@ public class PrivateMessageCommand implements SimpleCommand {
         // For anything after, make no suggestions
         if (invocation.arguments().length > 1) return List.of();
 
-        // TODO: Populate with actual list of players
-        // TODO: Populate with list of offline players that allow Discord DMs
-        return List.of();
+        // Get users that allow being messaged via Discord while offline
+        List<String> availableUsers = plugin.database.getAllUsersWithOfflineMessaging();
+        // Add all users that are currently online, if they aren't already in the list
+        plugin.server.getAllPlayers().forEach(player -> {
+            String username = player.getUsername();
+            if (!availableUsers.contains(username))
+                availableUsers.add(username);
+        });
+        // Sort the list alphabetically
+        availableUsers.sort(String::compareToIgnoreCase);
+
+        return availableUsers;
     }
 }
 
