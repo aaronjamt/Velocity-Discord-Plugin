@@ -20,7 +20,6 @@ import net.kyori.adventure.text.Component;
 import org.slf4j.Logger;
 
 import java.awt.*;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -40,14 +39,12 @@ public class MinecraftDiscordPlugin  {
     final Logger logger;
     final Config config;
     private final DiscordBot discordBot;
-    private final Path dataDirectory;
     final SQLiteDatabaseConnector database;
 
     @Inject
     public MinecraftDiscordPlugin(ProxyServer server, Logger logger, @DataDirectory Path dataDirectory) {
         this.server = server;
         this.logger = logger;
-        this.dataDirectory = dataDirectory;
 
         try {
             Files.createDirectories(dataDirectory);
