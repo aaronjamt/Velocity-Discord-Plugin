@@ -358,13 +358,6 @@ public class DiscordBot extends ListenerAdapter {
                 .build()).queue();
     }
 
-    public void sendAnnouncement(Color highlightColor, String message) {
-        chatChannel.sendMessageEmbeds(new EmbedBuilder()
-                .setColor(highlightColor.getRGB())
-                .setDescription(message)
-                .build()).queue();
-    }
-
     public void sendAnnouncement(String message) {
         chatChannel.sendMessageEmbeds(new EmbedBuilder()
                 .setDescription(message)
