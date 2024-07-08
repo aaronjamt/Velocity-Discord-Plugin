@@ -105,7 +105,8 @@ public class MinecraftDiscordPlugin  {
 
     @Subscribe
     public void onProxyReload(ProxyReloadEvent event) {
-
+        // Reload the config file
+        config.reload();
     }
 
     @Subscribe

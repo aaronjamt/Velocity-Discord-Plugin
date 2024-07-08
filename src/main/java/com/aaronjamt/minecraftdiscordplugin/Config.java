@@ -30,4 +30,8 @@ public class Config {
         this.dataDirectoryPath = dataDirectoryPath;
         // TODO: Load settings from config file
     }
+
+    public void reload() {
+        // TODO: Reload settings from config file
+    }
 }
