@@ -58,6 +58,7 @@ public class DiscordBot extends ListenerAdapter {
                 .addEventListeners(this)
                 .disableCache(CacheFlag.VOICE_STATE, CacheFlag.EMOJI, CacheFlag.STICKER, CacheFlag.SCHEDULED_EVENTS)
                 .setActivity(Activity.playing("Minecraft"))
+                .setEnableShutdownHook(false)
                 .build();
 
         jda.getRestPing().queue(ping ->
