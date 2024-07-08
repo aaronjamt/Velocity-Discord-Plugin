@@ -73,7 +73,6 @@ public class PrivateMessageCommand implements SimpleCommand {
         String destinationDiscordID = plugin.database.getDiscordIDFor(destinationAccount);
         if (destinationDiscordID == null) return;
 
-
         // Check if player wants to receive Discord DMs while online/offline
         if (playerOnline) {
             if (!plugin.database.getOnlineDiscordDMs(destinationAccount)) return;

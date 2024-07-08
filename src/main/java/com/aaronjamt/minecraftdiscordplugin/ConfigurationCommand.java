@@ -41,10 +41,8 @@ public class ConfigurationCommand implements SimpleCommand {
         // Check if the command is valid
         if (argv.length < 1 || !configOptions.contains(argv[0])) {
             // Help text
-            StringBuilder helpMessage = new StringBuilder("Usage: /discord [command]\n Valid commands:");
-            configOptions.forEach(option -> {
-                helpMessage.append(" ").append(option).append(",");
-        });
+            StringBuilder helpMessage = new StringBuilder("Usage: /discord <option> [value]\n Valid options:");
+            configOptions.forEach(option -> helpMessage.append(" ").append(option).append(","));
             invocation.source().sendPlainMessage(helpMessage.substring(0, helpMessage.length()-1));
             return;
         }
