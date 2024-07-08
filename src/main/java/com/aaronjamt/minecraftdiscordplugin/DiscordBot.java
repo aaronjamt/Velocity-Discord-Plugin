@@ -73,6 +73,10 @@ public class DiscordBot extends ListenerAdapter {
         }
     }
 
+    public void shutdown() {
+        jda.shutdown();
+    }
+
     public String replaceMentions(String message) {
         // TODO: Is there a better way to do this?
         // Start at the beginning
@@ -365,12 +369,6 @@ public class DiscordBot extends ListenerAdapter {
         chatChannel.sendMessageEmbeds(new EmbedBuilder()
                 .setDescription(message)
                 .build()).queue();
-    }
-
-    public void sendAnnouncementSync(String message) {
-        chatChannel.sendMessageEmbeds(new EmbedBuilder()
-                .setDescription(message)
-                .build()).complete();
     }
 
     public void sendPrivateMessage(String recipient, String message) {

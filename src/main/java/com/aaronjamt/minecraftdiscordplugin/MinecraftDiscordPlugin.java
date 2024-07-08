@@ -100,7 +100,8 @@ public class MinecraftDiscordPlugin  {
     @Subscribe
     public void onProxyShutdown(ProxyShutdownEvent event) {
         // Send announcement synchronously so that we can make sure it sends before completely shutting down
-        this.discordBot.sendAnnouncementSync(config.serverStoppedMessage);
+        this.discordBot.sendAnnouncement(config.serverStoppedMessage);
+        this.discordBot.shutdown();
     }
 
     @Subscribe
