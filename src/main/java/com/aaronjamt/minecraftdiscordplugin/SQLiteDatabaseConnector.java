@@ -2,6 +2,7 @@ package com.aaronjamt.minecraftdiscordplugin;
 
 import org.slf4j.Logger;
 
+import java.io.File;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.sql.*;
@@ -14,6 +15,7 @@ import javax.annotation.Nonnull;
 public class SQLiteDatabaseConnector {
     private final MinecraftDiscordPlugin plugin;
     private final Logger logger;
+    private final Config config;
     private final Connection connection;
 
     private final SecureRandom random = new SecureRandom();
@@ -29,14 +31,16 @@ public class SQLiteDatabaseConnector {
         msgReplyUser
     }
 
-    SQLiteDatabaseConnector(MinecraftDiscordPlugin plugin, Logger logger, String databasePath) throws SQLException {
+    SQLiteDatabaseConnector(MinecraftDiscordPlugin plugin, Logger logger, Config config) throws SQLException {
         this.plugin = plugin;
         this.logger = logger;
+        this.config = config;
 
-        //String url = "jdbc:sqlite:"+databasePath;
+        // Gets the sqliteDatabasePath as a child of the dataDirectoryPath
+        File databaseFile = new File(config.dataDirectoryPath.toFile(), config.sqliteDatabasePath);
 
         final SQLiteDataSource dc = new SQLiteDataSource();
-        dc.setUrl("jdbc:sqlite:" + databasePath);
+        dc.setUrl("jdbc:sqlite:" + databaseFile.getAbsolutePath());
         connection = dc.getConnection();
 
         // Create the database table if it doesn't exist
@@ -127,12 +131,12 @@ public class SQLiteDatabaseConnector {
         // Check if the Discord account is already linked
         UUID account = getAccountFromDiscord(discordId);
         if (account != null) {
-            return plugin.discordAccountAlreadyLinkedMessage.replace("{username}", getMinecraftNicknameFor(account));
+            return config.discordAccountAlreadyLinkedMessage.replace("{username}", getMinecraftNicknameFor(account));
         }
 
         // Check if the link code is valid
         if (getAccountFromDiscord("LINK "+linkCode) == null) {
-            return plugin.invalidLinkCodeMessage.replace("{code}", linkCode);
+            return config.invalidLinkCodeMessage.replace("{code}", linkCode);
         }
 
         // Link the new account

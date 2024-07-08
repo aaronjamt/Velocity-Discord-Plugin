@@ -11,10 +11,12 @@ import java.util.UUID;
 public class PrivateMessageCommand implements SimpleCommand {
     protected final MinecraftDiscordPlugin plugin;
     private final DiscordBot discordBot;
+    private final Config config;
 
-    public PrivateMessageCommand(MinecraftDiscordPlugin plugin, DiscordBot discordBot) {
+    public PrivateMessageCommand(MinecraftDiscordPlugin plugin, DiscordBot discordBot, Config config) {
         this.plugin = plugin;
         this.discordBot = discordBot;
+        this.config = config;
     }
 
     @Override
@@ -50,7 +52,7 @@ public class PrivateMessageCommand implements SimpleCommand {
 
         // Send message to source user, if not the same as the destination user
         if (!sourceName.equals(destinationName)) {
-            source.sendRichMessage(plugin.minecraftPrivateMessageFormat
+            source.sendRichMessage(config.minecraftPrivateMessageFormat
                     .replace("{sender}", sourceName)
                     .replace("{recipient}", destinationName)
                     .replace("{message}", message)
@@ -62,7 +64,7 @@ public class PrivateMessageCommand implements SimpleCommand {
         boolean playerOnline = destinationPlayerOptional.isPresent();
         if (playerOnline) {
             Player destinationPlayer = destinationPlayerOptional.get();
-            destinationPlayer.sendRichMessage(plugin.minecraftPrivateMessageFormat
+            destinationPlayer.sendRichMessage(config.minecraftPrivateMessageFormat
                     .replace("{sender}", sourceName)
                     .replace("{recipient}", destinationName)
                     .replace("{message}", message)
@@ -82,7 +84,7 @@ public class PrivateMessageCommand implements SimpleCommand {
 
         // Send the message to the Discord account
         discordBot.sendPrivateMessage(destinationDiscordID,
-                plugin.discordPrivateMessageFormat
+                config.discordPrivateMessageFormat
                         .replace("{sender}", sourceName)
                         .replace("{recipient}", destinationName)
                         .replace("{message}", message)
@@ -110,8 +112,8 @@ public class PrivateMessageCommand implements SimpleCommand {
 // Specifically handles the "reply" command (where the destination username is the
 // last person you messaged, and the entirety of the argument list is the message)
 class ReplyCommand extends PrivateMessageCommand {
-    public ReplyCommand(MinecraftDiscordPlugin plugin, DiscordBot discordBot) {
-        super(plugin, discordBot);
+    public ReplyCommand(MinecraftDiscordPlugin plugin, DiscordBot discordBot, Config config) {
+        super(plugin, discordBot, config);
     }
 
     @Override

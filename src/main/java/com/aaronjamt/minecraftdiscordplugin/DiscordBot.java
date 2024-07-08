@@ -41,22 +41,20 @@ public class DiscordBot extends ListenerAdapter {
     private final MinecraftDiscordPlugin plugin;
     private final Logger logger;
     private final JDA jda;
-    private final String guildId;
-    private final String chatChannelId;
+    private final Config config;
     private TextChannel chatChannel;
     private String chatWebhookUrl;
     private Guild guild;
 
     private Consumer<ChatMessage> chatMessageCallback;
 
-    DiscordBot(MinecraftDiscordPlugin plugin, Logger logger, String botToken, String guildId, String chatChannelId) {
+    DiscordBot(MinecraftDiscordPlugin plugin, Logger logger, Config config) {
         this.plugin = plugin;
         this.logger = logger;
-        this.guildId = guildId;
-        this.chatChannelId = chatChannelId;
+        this.config = config;
 
         logger.info("Logging into Discord...");
-        jda = JDABuilder.create(botToken, GatewayIntent.MESSAGE_CONTENT, GatewayIntent.GUILD_MESSAGES, GatewayIntent.GUILD_MEMBERS, GatewayIntent.GUILD_PRESENCES)
+        jda = JDABuilder.create(config.discordBotToken, GatewayIntent.MESSAGE_CONTENT, GatewayIntent.GUILD_MESSAGES, GatewayIntent.GUILD_MEMBERS, GatewayIntent.GUILD_PRESENCES)
                 .addEventListeners(this)
                 .disableCache(CacheFlag.VOICE_STATE, CacheFlag.EMOJI, CacheFlag.STICKER, CacheFlag.SCHEDULED_EVENTS)
                 .setActivity(Activity.playing("Minecraft"))
@@ -144,15 +142,15 @@ public class DiscordBot extends ListenerAdapter {
     @Override
     public void onReady(@NotNull ReadyEvent event) {
         // Get appropriate guild & channel
-        guild = Objects.requireNonNull(jda.getGuildById(guildId));
-        chatChannel = guild.getChannelById(TextChannel.class, chatChannelId);
+        guild = Objects.requireNonNull(jda.getGuildById(config.discordBotGuild));
+        chatChannel = guild.getChannelById(TextChannel.class, config.discordBotChannel);
 
         // We can't do much without a valid Discord channel
         if (chatChannel == null) {
             logger.error("Error: No such Discord channel with ID: {}. " +
                     "Please make sure you set the ID of the channel in the config file," +
                             " and that the bot has access to it.",
-                    chatChannelId
+                    config.discordBotChannel
             );
             throw new RuntimeException("Invalid Discord channel ID");
         }
@@ -180,7 +178,7 @@ public class DiscordBot extends ListenerAdapter {
 
             // Send the announcement that we're online
             // TODO: Is there a better way to do this? Maybe queue sent Discord messages until we're online, then just send this from the main plugin class?
-            sendAnnouncement(plugin.serverStartedMessage);
+            sendAnnouncement(config.serverStartedMessage);
         });
 
         jda.retrieveCommands().queue(commands ->
@@ -245,7 +243,7 @@ public class DiscordBot extends ListenerAdapter {
                 logger.info("Updating message...");
                 message.editMessageEmbeds(new EmbedBuilder()
                         .setDescription(
-                                plugin.minecraftNewPlayerMessage.replace("{username}", plugin.database.getMinecraftNicknameFor(account))
+                                config.minecraftNewPlayerMessage.replace("{username}", plugin.database.getMinecraftNicknameFor(account))
                         )
                         .build()
                 ).queue();
@@ -264,7 +262,7 @@ public class DiscordBot extends ListenerAdapter {
         // Ignore messages from us
         if (event.getAuthor() == jda.getSelfUser()) return;
         // Ignore messages to a different channel
-        if (!event.getChannel().getId().equals(chatChannelId)) return;
+        if (!event.getChannel().getId().equals(config.discordBotChannel)) return;
 
         logger.info("{} ({}) [@{} # {}] in {}: {}",
                 event.getMember().getEffectiveName(),
@@ -306,7 +304,7 @@ public class DiscordBot extends ListenerAdapter {
         if (player.isEmpty()) return;
 
         // Kick the player
-        player.get().disconnect(Component.text(plugin.discordUserLeftServerMessage));
+        player.get().disconnect(Component.text(config.discordUserLeftServerMessage));
     }
 
     void setChatMessageCallback(Consumer<ChatMessage> callback) {

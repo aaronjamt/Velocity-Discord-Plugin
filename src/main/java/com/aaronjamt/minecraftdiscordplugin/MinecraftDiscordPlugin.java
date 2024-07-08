@@ -38,31 +38,10 @@ public class MinecraftDiscordPlugin  {
     @Inject
     final ProxyServer server;
     final Logger logger;
+    final Config config;
     private final DiscordBot discordBot;
     private final Path dataDirectory;
     final SQLiteDatabaseConnector database;
-
-
-    //[<red>bhsmc</red> <white>|</white> <green>ulface</green> <white>|</white> <blue>kaii</blue>] <white>new chat?</white>
-    static final String minecraftMessageTemplate = "[<red>{server}</red> <white>|</white> <green>{minecraftUsername}</green> <white>|</white> <blue>{discordUsername}</blue>] <white>{message}</white>";
-    static final String discordMessageTemplate = "[<red>DISCORD</red> <white>|</white> <green>{minecraftUsername}</green> <white>|</white> <blue>{discordUsername}</blue>] <white>{message}</white>";
-    static final String noMinecraftAccountPlaceholder = "[NonCrafter]";
-    static final String discordBotToken = "MTI1ODIzNzMxMTQzOTYwMTY5Ng.GofcME.fZM0NG9C5XhuuD87RQ96ERL0RS-MnCMW__P4xk";
-    static final String discordBotGuild = "1257847609494863973";
-    static final String discordBotChannel = "1259427811903537194";
-    static final String minecraftPlayerJoinMessage = "{username} has joined the network!";
-    static final String minecraftPlayerJoinUnlinkedMessage = "Welcome to the server, {username}! Click the button below and enter your link code to link your Discord and Minecraft accounts!";
-    static final String minecraftNewPlayerMessage = "Welcome to the server, {username}!"; // The minecraftPlayerJoinUnlinkedMessage is swapped for this when the account is linked
-    static final String minecraftPlayerLeaveMessage = "{username} has left the network!";
-    static final String playerNeedsToLinkMessage = "Please link your Discord account!\nCheck the Discord server for details.\n\nLink code:\n{code}";
-    static final String serverStoppedMessage = "🛑 Server has stopped!";
-    static final String serverStartedMessage = "✅ Server has started!";
-    static final String minecraftPrivateMessageFormat = "[<blue>{sender}</blue> <dark_gray>-></dark_gray> <green>{recipient}</green>] {message}";
-    static final String discordPrivateMessageFormat = "*{sender} whispers to you:* {message}";
-    static final String discordAccountAlreadyLinkedMessage = "Your Discord account is already linked to a Minecraft account! Unlink the account '{username}' first.";
-    static final String discordAccountLinkedSuccessfullyMessage = "Successfully linked with Minecraft account '{username}'! You can now join the server!";
-    static final String invalidLinkCodeMessage = "Invalid link code '{code}'. Please check to make sure you typed it correctly!";
-    static final String discordUserLeftServerMessage = "You left the Discord server! You must be in the Discord server to access the Minecraft server.";
 
     @Inject
     public MinecraftDiscordPlugin(ProxyServer server, Logger logger, @DataDirectory Path dataDirectory) {
@@ -77,9 +56,11 @@ public class MinecraftDiscordPlugin  {
             throw new RuntimeException(e);
         }
         // TODO: Config file in dataDirectory
+        this.config = new Config();
+        this.config.dataDirectoryPath = dataDirectory; // Add data directory to the config object
 
         // Set up Discord bot
-        discordBot = new DiscordBot(this, logger, discordBotToken, discordBotGuild, discordBotChannel);
+        discordBot = new DiscordBot(this, logger, config);
         discordBot.setChatMessageCallback(this::sendChatMessage);
 
         // Register commands
@@ -93,14 +74,14 @@ public class MinecraftDiscordPlugin  {
                         .aliases("m")
                         .plugin(this)
                         .build(),
-                new PrivateMessageCommand(this, discordBot)
+                new PrivateMessageCommand(this, discordBot, config)
         );
         commandManager.register(
                 commandManager.metaBuilder("r")
                         .aliases("reply")
                         .plugin(this)
                         .build(),
-                new ReplyCommand(this, discordBot)
+                new ReplyCommand(this, discordBot, config)
         );
         commandManager.register(
                 commandManager.metaBuilder("discord")
@@ -113,9 +94,7 @@ public class MinecraftDiscordPlugin  {
 
         // Set up database
         try {
-            String databaseFileName = "database.sqlite"; // TODO: Read from config file
-            String databaseFilePath = new File(dataDirectory.toFile(), databaseFileName).getAbsolutePath();
-            this.database = new SQLiteDatabaseConnector(this, logger, databaseFilePath);
+            this.database = new SQLiteDatabaseConnector(this, logger, config);
         } catch (SQLException e) {
             server.shutdown();
                 throw new RuntimeException(e);
@@ -141,13 +120,13 @@ public class MinecraftDiscordPlugin  {
         if (linkCode != null) {
             // Since we got a link code, they are not allowed to connect. Kick them and provide the link code.
             event.setResult(ResultedEvent.ComponentResult.denied(
-                    Component.text(playerNeedsToLinkMessage.replace("{code}", linkCode))
+                    Component.text(config.playerNeedsToLinkMessage.replace("{code}", linkCode))
             ));
 
             logger.info("Sending announcement to link...");
 
             // Post a message to the Discord server announcing that they attempted to join, with a button for easy linking
-            discordBot.sendLinkAnnouncement(minecraftPlayerJoinUnlinkedMessage.replace("{username}", event.getPlayer().getUsername()));
+            discordBot.sendLinkAnnouncement(config.minecraftPlayerJoinUnlinkedMessage.replace("{username}", event.getPlayer().getUsername()));
             return;
         }
 
@@ -155,7 +134,7 @@ public class MinecraftDiscordPlugin  {
         String discordID = database.getDiscordIDFor(player.getUniqueId());
         if (!discordBot.isMemberInServer(discordID)) {
             // Kick them with the appropriate message
-            event.setResult(ResultedEvent.ComponentResult.denied(Component.text(discordUserLeftServerMessage)));
+            event.setResult(ResultedEvent.ComponentResult.denied(Component.text(config.discordUserLeftServerMessage)));
         }
     }
 
@@ -168,7 +147,7 @@ public class MinecraftDiscordPlugin  {
         Player player = event.getPlayer();
         String mcName = player.getUsername();
         String mcIcon = String.format("https://heads.discordsrv.com/head.png?texture=&uuid=%s&name=%s&overlay", player.getUniqueId().toString().replaceAll("-",""), mcName);
-        String message = minecraftPlayerJoinMessage.replace("{username}", mcName);
+        String message = config.minecraftPlayerJoinMessage.replace("{username}", mcName);
         sendMessageToAll(message);
 
         discordBot.sendAnnouncement(Color.green, message, mcName, mcIcon);
@@ -184,7 +163,7 @@ public class MinecraftDiscordPlugin  {
         Player player = event.getPlayer();
         String mcName = player.getUsername();
         String mcIcon = String.format("https://heads.discordsrv.com/head.png?texture=&uuid=%s&name=%s&overlay", player.getUniqueId().toString().replaceAll("-",""), mcName);
-        String message = minecraftPlayerLeaveMessage.replace("{username}", mcName);
+        String message = config.minecraftPlayerLeaveMessage.replace("{username}", mcName);
         sendMessageToAll(message);
 
         discordBot.sendAnnouncement(Color.red, message, mcName, mcIcon);
@@ -250,7 +229,7 @@ public class MinecraftDiscordPlugin  {
                     return;
                 }
             } else {
-                mcName = noMinecraftAccountPlaceholder;
+                mcName = config.noMinecraftAccountPlaceholder;
             }
         } else {
             // If it's coming from Minecraft, treat the "user" field as a Minecraft account UUID
@@ -269,9 +248,9 @@ public class MinecraftDiscordPlugin  {
 
         String finalMessage;
         if (message.isDiscordMessage)
-            finalMessage = discordMessageTemplate;
+            finalMessage = config.discordMessageTemplate;
         else
-            finalMessage = minecraftMessageTemplate.replace("{server}", message.server);
+            finalMessage = config.minecraftMessageTemplate.replace("{server}", message.server);
 
         finalMessage = finalMessage
                 .replace("{minecraftUsername}", mcName)
