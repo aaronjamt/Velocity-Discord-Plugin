@@ -56,10 +56,9 @@ public class DiscordBot extends ListenerAdapter {
         this.chatChannelId = chatChannelId;
 
         logger.info("Logging into Discord...");
-        jda = JDABuilder.create(botToken, GatewayIntent.GUILD_MESSAGES, GatewayIntent.MESSAGE_CONTENT, GatewayIntent.GUILD_MEMBERS)
+        jda = JDABuilder.create(botToken, GatewayIntent.MESSAGE_CONTENT, GatewayIntent.GUILD_MESSAGES, GatewayIntent.GUILD_MEMBERS, GatewayIntent.GUILD_PRESENCES)
                 .addEventListeners(this)
                 .disableCache(CacheFlag.VOICE_STATE, CacheFlag.EMOJI, CacheFlag.STICKER, CacheFlag.SCHEDULED_EVENTS)
-                .disableCache(CacheFlag.ACTIVITY, CacheFlag.CLIENT_STATUS, CacheFlag.ONLINE_STATUS) // TODO: Figure out how to allow presence updates
                 .setActivity(Activity.playing("Minecraft"))
                 .build();
 
