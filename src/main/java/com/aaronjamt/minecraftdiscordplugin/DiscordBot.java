@@ -364,6 +364,13 @@ public class DiscordBot extends ListenerAdapter {
                 .build()).queue();
     }
 
+    public void sendAnnouncementSync(String message) {
+            chatChannel.sendMessageEmbeds(new EmbedBuilder()
+            .setDescription(message)
+            .build()).complete();
+    }
+
+
     public void sendPrivateMessage(String recipient, String message) {
         guild.retrieveMember(UserSnowflake.fromId(recipient)).queue(member ->
             member.getUser().openPrivateChannel().queue((channel) ->
