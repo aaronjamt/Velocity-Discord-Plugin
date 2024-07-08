@@ -15,7 +15,6 @@ import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.session.ReadyEvent;
-import net.dv8tion.jda.api.events.session.ShutdownEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.components.ActionRow;
 import net.dv8tion.jda.api.interactions.components.buttons.Button;
@@ -295,7 +294,7 @@ public class DiscordBot extends ListenerAdapter {
     public void onGuildMemberRemove(@NotNull GuildMemberRemoveEvent event) {
         String removedUserID = event.getUser().getId();
 
-        // Check if this ID corresponds to a linked Discord acccount for the server
+        // Check if this ID corresponds to a linked Discord account for the server
         // If not, we don't need to do anything about it
         UUID minecraftID = plugin.database.getAccountFromDiscord(removedUserID);
         if (minecraftID == null) return;

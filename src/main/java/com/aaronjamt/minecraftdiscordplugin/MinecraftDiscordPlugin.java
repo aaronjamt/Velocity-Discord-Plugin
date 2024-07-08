@@ -90,7 +90,7 @@ public class MinecraftDiscordPlugin  {
 
         // Set up database
         try {
-            this.database = new SQLiteDatabaseConnector(this, logger, config);
+            this.database = new SQLiteDatabaseConnector(logger, config);
         } catch (SQLException e) {
             server.shutdown();
                 throw new RuntimeException(e);
@@ -265,10 +265,10 @@ public class MinecraftDiscordPlugin  {
 }
 
 class ChatMessage {
-    public String user;
-    public String message;
-    public String server;
-    public boolean isDiscordMessage;
+    public final String user;
+    public final String message;
+    public final String server;
+    public final boolean isDiscordMessage;
 
     ChatMessage(String user, String message, String server, boolean isDiscordMessage) {
         this.user = user;

@@ -15,14 +15,12 @@ import org.sqlite.SQLiteDataSource;
 import javax.annotation.Nonnull;
 
 public class SQLiteDatabaseConnector {
-    private final MinecraftDiscordPlugin plugin;
     private final Logger logger;
     private final Config config;
     private final Connection connection;
 
     private final SecureRandom random = new SecureRandom();
 
-    // TODO: Maybe use an enum instead of a String for column arguments to make sure there isn't an injection vuln
     enum DatabaseColumns {
         minecraftUUID,
         minecraftUser,
@@ -33,8 +31,7 @@ public class SQLiteDatabaseConnector {
         msgReplyUser
     }
 
-    SQLiteDatabaseConnector(MinecraftDiscordPlugin plugin, Logger logger, Config config) throws SQLException {
-        this.plugin = plugin;
+    SQLiteDatabaseConnector(Logger logger, Config config) throws SQLException {
         this.logger = logger;
         this.config = config;
 
