@@ -145,7 +145,7 @@ public class SQLiteDatabaseConnector {
         // Get the username of the Minecraft account we've linked to
         account = getAccountFromDiscord(discordId);
         if (account != null) {
-            return plugin.discordAccountLinkedSuccessfullyMessage.replace("{username}", getMinecraftNicknameFor(account));
+            return config.discordAccountLinkedSuccessfullyMessage.replace("{username}", getMinecraftNicknameFor(account));
         }
 
         // If we get here, we tried to update the account and didn't encounter any SQLException(s), yet it didn't update.
