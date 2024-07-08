@@ -162,8 +162,8 @@ public class MinecraftDiscordPlugin  {
 
     @Subscribe
     public void onDisconnect(DisconnectEvent event) {
-        // If the player disconnected because we cancelled their connection, don't send the announcement
-        if (event.getLoginStatus() == DisconnectEvent.LoginStatus.CANCELLED_BY_PROXY)
+        // If the player wasn't connected yet, don't send a disconnect announcement
+        if (event.getLoginStatus() != DisconnectEvent.LoginStatus.SUCCESSFUL_LOGIN)
             return;
 
         // Send a message to all players and to Discord announcing that the player left
