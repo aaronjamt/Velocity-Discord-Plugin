@@ -161,6 +161,9 @@ public class MinecraftDiscordPlugin  {
 
     @Subscribe
     public void onConnect(ServerConnectedEvent event) {
+        // Don't announce join event if they just switched between servers
+        if (event.getPreviousServer().isPresent()) return;
+
         // Send a message to all players and to Discord announcing that the player joined
         Player player = event.getPlayer();
         String mcName = player.getUsername();
