@@ -53,8 +53,7 @@ public class MinecraftDiscordPlugin  {
             throw new RuntimeException(e);
         }
         // TODO: Config file in dataDirectory
-        this.config = new Config();
-        this.config.dataDirectoryPath = dataDirectory; // Add data directory to the config object
+        this.config = new Config(dataDirectory);
 
         // Set up Discord bot
         discordBot = new DiscordBot(this, logger, config);

@@ -25,4 +25,9 @@ public class Config {
     public final String discordUserLeftServerMessage = "You left the Discord server! You must be in the Discord server to access the Minecraft server.";
     public final String sqliteDatabasePath = "database.sqlite";
     public Path dataDirectoryPath;
+
+    Config(Path dataDirectoryPath) {
+        this.dataDirectoryPath = dataDirectoryPath;
+        // TODO: Load settings from config file
+    }
 }
