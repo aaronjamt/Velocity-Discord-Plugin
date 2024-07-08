@@ -1,38 +1,76 @@
 package com.aaronjamt.minecraftdiscordplugin;
 
+import org.tomlj.Toml;
+import org.tomlj.TomlParseResult;
+
+import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
+import java.util.List;
 
 public class Config {
-    // TODO: Get these into config/database files
-    public final String minecraftMessageTemplate = "[<red>{server}</red> <white>|</white> <green>{minecraftUsername}</green> <white>|</white> <blue>{discordUsername}</blue>] <white>{message}</white>";
-    public final String discordMessageTemplate = "[<red>DISCORD</red> <white>|</white> <green>{minecraftUsername}</green> <white>|</white> <blue>{discordUsername}</blue>] <white>{message}</white>";
-    public final String noMinecraftAccountPlaceholder = "[NonCrafter]";
-    public final String discordBotToken = "MTI1ODIzNzMxMTQzOTYwMTY5Ng.GofcME.fZM0NG9C5XhuuD87RQ96ERL0RS-MnCMW__P4xk";
-    public final String discordBotGuild = "1257847609494863973";
-    public final String discordBotChannel = "1259427811903537194";
-    public final String minecraftPlayerJoinMessage = "{username} has joined the network!";
-    public final String minecraftPlayerJoinUnlinkedMessage = "Welcome to the server, {username}! Click the button below and enter your link code to link your Discord and Minecraft accounts!";
-    public final String minecraftPlayerSwitchServersMessage = "{username} joined the {new_server} server!";
-    public final String minecraftNewPlayerMessage = "Welcome to the server, {username}!"; // The minecraftPlayerJoinUnlinkedMessage is swapped for this when the account is linked
-    public final String minecraftPlayerLeaveMessage = "{username} has left the network!";
-    public final String playerNeedsToLinkMessage = "Please link your Discord account!\nCheck the Discord server for details.\n\nLink code:\n{code}";
-    public final String serverStoppedMessage = "🛑 Server has stopped!";
-    public final String serverStartedMessage = "✅ Server has started!";
-    public final String minecraftPrivateMessageFormat = "[<blue>{sender}</blue> <dark_gray>-></dark_gray> <green>{recipient}</green>] {message}";
-    public final String discordPrivateMessageFormat = "*{sender} whispers to you:* {message}";
-    public final String discordAccountAlreadyLinkedMessage = "Your Discord account is already linked to a Minecraft account! Unlink the account '{username}' first.";
-    public final String discordAccountLinkedSuccessfullyMessage = "Successfully linked with Minecraft account '{username}'! You can now join the server!";
-    public final String invalidLinkCodeMessage = "Invalid link code '{code}'. Please check to make sure you typed it correctly!";
-    public final String discordUserLeftServerMessage = "You left the Discord server! You must be in the Discord server to access the Minecraft server.";
-    public final String sqliteDatabasePath = "database.sqlite";
     public Path dataDirectoryPath;
+    public String discordBotToken;
+    public String discordBotGuild;
+    public String discordBotChannel;
+    public String sqliteDatabasePath;
+    public String minecraftMessageTemplate;
+    public String discordMessageTemplate;
+    public String noMinecraftAccountPlaceholder;
+    public String minecraftPlayerJoinMessage;
+    public String minecraftPlayerJoinUnlinkedMessage;
+    public String minecraftPlayerSwitchServersMessage;
+    public String minecraftNewPlayerMessage;
+    public String minecraftPlayerLeaveMessage;
+    public String playerNeedsToLinkMessage;
+    public String serverStoppedMessage;
+    public String serverStartedMessage;
+    public String minecraftPrivateMessageFormat;
+    public String discordPrivateMessageFormat;
+    public String discordAccountAlreadyLinkedMessage;
+    public String discordAccountLinkedSuccessfullyMessage;
+    public String invalidLinkCodeMessage;
+    public String discordUserLeftServerMessage;
 
     Config(Path dataDirectoryPath) {
         this.dataDirectoryPath = dataDirectoryPath;
-        // TODO: Load settings from config file
+        // Call reload() to load the data from disk
+        reload();
     }
 
+    // Loads the data from disk
+    // Since it overwrites all existing data, it's also suitable as a reload method, and hence is named as such.
     public void reload() {
-        // TODO: Reload settings from config file
+        File configFile = new File(dataDirectoryPath.toFile(), "config.toml");
+        try {
+            TomlParseResult parse = Toml.parse(configFile.toPath());
+            // Parse Discord bot settings
+            discordBotToken = parse.getString(List.of("discord", "token"));
+            discordBotGuild = parse.getString(List.of("discord", "serverID"));
+            discordBotChannel = parse.getString(List.of("discord", "channelID"));
+            // Parse database settings
+            sqliteDatabasePath = parse.getString(List.of("database", "filename"));
+            // Parse messages
+            // TODO: Clean up names and order
+            minecraftMessageTemplate = parse.getString(List.of("messages", "minecraftMessageTemplate"));
+            discordMessageTemplate = parse.getString(List.of("messages", "discordMessageTemplate"));
+            noMinecraftAccountPlaceholder = parse.getString(List.of("messages", "noMinecraftAccountPlaceholder"));
+            minecraftPlayerJoinMessage = parse.getString(List.of("messages", "minecraftPlayerJoinMessage"));
+            minecraftPlayerJoinUnlinkedMessage = parse.getString(List.of("messages", "minecraftPlayerJoinUnlinkedMessage"));
+            minecraftPlayerSwitchServersMessage = parse.getString(List.of("messages", "minecraftPlayerSwitchServersMessage"));
+            minecraftNewPlayerMessage = parse.getString(List.of("messages", "minecraftNewPlayerMessage"));
+            minecraftPlayerLeaveMessage = parse.getString(List.of("messages", "minecraftPlayerLeaveMessage"));
+            playerNeedsToLinkMessage = parse.getString(List.of("messages", "playerNeedsToLinkMessage"));
+            serverStoppedMessage = parse.getString(List.of("messages", "serverStoppedMessage"));
+            serverStartedMessage = parse.getString(List.of("messages", "serverStartedMessage"));
+            minecraftPrivateMessageFormat = parse.getString(List.of("messages", "minecraftPrivateMessageFormat"));
+            discordPrivateMessageFormat = parse.getString(List.of("messages", "discordPrivateMessageFormat"));
+            discordAccountAlreadyLinkedMessage = parse.getString(List.of("messages", "discordAccountAlreadyLinkedMessage"));
+            discordAccountLinkedSuccessfullyMessage = parse.getString(List.of("messages", "discordAccountLinkedSuccessfullyMessage"));
+            invalidLinkCodeMessage = parse.getString(List.of("messages", "invalidLinkCodeMessage"));
+            discordUserLeftServerMessage = parse.getString(List.of("messages", "discordUserLeftServerMessage"));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
