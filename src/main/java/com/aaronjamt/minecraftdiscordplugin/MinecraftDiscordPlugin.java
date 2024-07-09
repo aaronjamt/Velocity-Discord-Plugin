@@ -151,7 +151,7 @@ public class MinecraftDiscordPlugin  {
         // Send a message to all players and to Discord announcing that the player joined/switched servers
         Player player = event.getPlayer();
         String mcName = player.getUsername();
-        String mcIcon = String.format("https://heads.discordsrv.com/head.png?texture=&uuid=%s&name=%s&overlay", player.getUniqueId().toString().replaceAll("-", ""), mcName);
+        String mcIcon = String.format(config.minecraftHeadURL, player.getUniqueId().toString().replaceAll("-", ""), mcName);
         String message;
         Color discordColor;
         // If they were already on a different server, show a "server switch" message instead
@@ -179,7 +179,7 @@ public class MinecraftDiscordPlugin  {
         // Send a message to all players and to Discord announcing that the player left
         Player player = event.getPlayer();
         String mcName = player.getUsername();
-        String mcIcon = String.format("https://heads.discordsrv.com/head.png?texture=&uuid=%s&name=%s&overlay", player.getUniqueId().toString().replaceAll("-",""), mcName);
+        String mcIcon = String.format(config.minecraftHeadURL, player.getUniqueId().toString().replaceAll("-",""), mcName);
         String message = config.minecraftPlayerLeaveMessage.replace("{username}", mcName);
         sendMessageToAll(message);
 

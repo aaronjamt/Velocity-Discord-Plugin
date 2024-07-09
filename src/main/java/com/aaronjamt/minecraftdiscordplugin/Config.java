@@ -13,6 +13,7 @@ public class Config {
     public String discordBotToken;
     public String discordBotGuild;
     public String discordBotChannel;
+    public String minecraftHeadURL;
     public String sqliteDatabasePath;
     public String minecraftMessageTemplate;
     public String discordMessageTemplate;
@@ -45,6 +46,8 @@ public class Config {
         File configFile = new File(dataDirectoryPath.toFile(), "config.toml");
         try {
             TomlParseResult parse = Toml.parse(configFile.toPath());
+            // Parse general settings
+            minecraftHeadURL = parse.getString(List.of("general", "minecraftHeadURL"));
             // Parse Discord bot settings
             discordBotToken = parse.getString(List.of("discord", "token"));
             discordBotGuild = parse.getString(List.of("discord", "serverID"));
