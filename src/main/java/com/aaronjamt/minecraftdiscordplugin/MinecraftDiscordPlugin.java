@@ -87,6 +87,16 @@ public class MinecraftDiscordPlugin  {
                         .build(),
                 new ConfigurationCommand(this)
         );
+        commandManager.register(
+                commandManager.metaBuilder("broadcast")
+                        .aliases("announcement")
+                        .aliases("announce")
+                        .aliases("b")
+                        .aliases("a")
+                        .plugin(this)
+                        .build(),
+                new BroadcastCommand(this, config)
+        );
 
         // Set up database
         try {

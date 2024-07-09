@@ -31,6 +31,7 @@ public class Config {
     public String discordAccountLinkedSuccessfullyMessage;
     public String invalidLinkCodeMessage;
     public String discordUserLeftServerMessage;
+    public String broadcastMessageFormat;
 
     Config(Path dataDirectoryPath) {
         this.dataDirectoryPath = dataDirectoryPath;
@@ -69,6 +70,7 @@ public class Config {
             discordAccountLinkedSuccessfullyMessage = parse.getString(List.of("messages", "discordAccountLinkedSuccessfullyMessage"));
             invalidLinkCodeMessage = parse.getString(List.of("messages", "invalidLinkCodeMessage"));
             discordUserLeftServerMessage = parse.getString(List.of("messages", "discordUserLeftServerMessage"));
+            broadcastMessageFormat = parse.getString(List.of("messages", "broadcastMessageFormat"));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
