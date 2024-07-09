@@ -370,11 +370,24 @@ public class DiscordBot extends ListenerAdapter {
             .build()).complete();
     }
 
+    public void sendPrivateMessage(String sender, String recipient, String message) {
+        // Get the name and icon for the sender to build the embed
+        UUID senderAccount = plugin.database.getAccountFromDiscord(sender);
+        String senderName = plugin.database.getMinecraftNicknameFor(senderAccount);
+        String senderIcon = String.format(config.minecraftHeadURL, senderAccount.toString().replaceAll("-",""), senderName);
+        MessageEmbed embed = new EmbedBuilder()
+                .setAuthor(senderName, null, senderIcon)
+                .setDescription(message)
+                .setColor(Color.cyan)
+                .setFooter("This is a private message.")
+                .build();
 
-    public void sendPrivateMessage(String recipient, String message) {
+        // Get the Discord member for the recipient
         guild.retrieveMember(UserSnowflake.fromId(recipient)).queue(member ->
+            // Get our DMs with them
             member.getUser().openPrivateChannel().queue((channel) ->
-                    channel.sendMessage(message).queue()
+                // Send the message to them
+                channel.sendMessageEmbeds(embed).queue()
             )
         );
     }

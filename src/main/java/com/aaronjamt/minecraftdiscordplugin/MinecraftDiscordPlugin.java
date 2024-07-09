@@ -314,12 +314,7 @@ public class MinecraftDiscordPlugin  {
         }
 
         // Send the message to the Discord account
-        discordBot.sendPrivateMessage(sourceDiscordID, destinationDiscordID,
-                config.discordPrivateMessageFormat
-                        .replace("{sender}", sourceName)
-                        .replace("{recipient}", destinationName)
-                        .replace("{message}", message)
-        );
+        discordBot.sendPrivateMessage(sourceDiscordID, destinationDiscordID, message);
     }
 }
 
