@@ -70,14 +70,14 @@ public class MinecraftDiscordPlugin  {
                         .aliases("m")
                         .plugin(this)
                         .build(),
-                new PrivateMessageCommand(this, discordBot, config)
+                new PrivateMessageCommand(this, config)
         );
         commandManager.register(
                 commandManager.metaBuilder("r")
                         .aliases("reply")
                         .plugin(this)
                         .build(),
-                new ReplyCommand(this, discordBot, config)
+                new ReplyCommand(this, config)
         );
         commandManager.register(
                 commandManager.metaBuilder("discord")
@@ -207,7 +207,6 @@ public class MinecraftDiscordPlugin  {
         String mcIcon = String.format("https://heads.discordsrv.com/head.png?texture=%s&uuid=%s&name=%s&overlay", "", playerUuid.replaceAll("-",""), playerName);
 
         // Get linked Discord username and icon
-
         String discordUser = database.getDiscordIDFor(player.getUniqueId());
         String discordName = discordBot.getUsernameFromID(discordUser);
         String discordIcon = discordBot.getUserIconFromID(discordUser);

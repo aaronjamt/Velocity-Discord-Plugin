@@ -90,18 +90,16 @@ public class DiscordBot extends ListenerAdapter {
             if (endIndex == -1) endIndex = message.length();
             String mention = message.substring(index, endIndex);
 
-//            logger.info("Replacing mention: '{}'", mention);
             // Find a Discord user with that username
             boolean foundMention = false;
             for (User user : jda.getUsers()) {
                 // If we find a user with that username, replace with the <@ID> format and end the loop early
-//                logger.info("Found user with e='{}', n='{}', g='{}' (i='{}')...", user.getEffectiveName(), user.getName(), user.getGlobalName(), user.getId());
                 if (user.getEffectiveName().equalsIgnoreCase(mention) || user.getName().equalsIgnoreCase(mention)) {
                     logger.info("Is a match!");
                     mention = String.format("<@%s>", user.getId());
                     foundMention = true;
                     break;
-                }// else logger.info("No match.");
+                }
             }
             // If we didn't find a mention, add the @ we removed before back to it
             if (!foundMention) mention = "@" + mention;
@@ -137,11 +135,6 @@ public class DiscordBot extends ListenerAdapter {
                     .build()
             );
         }
-    }
-
-    // Wrapper for main webhookSendEmbed method that uses the bot's effective name and avatar
-    void webhookSendEmbed(WebhookEmbed embed) {
-        webhookSendEmbed(embed, jda.getSelfUser().getEffectiveName(), jda.getSelfUser().getEffectiveAvatarUrl());
     }
 
     @Override
@@ -210,8 +203,6 @@ public class DiscordBot extends ListenerAdapter {
                     .build();
 
             event.replyModal(modal).queue();
-
-//            event.editButton(event.getButton().withStyle(ButtonStyle.SECONDARY)).queue();
         }
     }
 

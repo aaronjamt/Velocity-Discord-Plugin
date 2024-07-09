@@ -1,6 +1,5 @@
 package com.aaronjamt.minecraftdiscordplugin;
 
-import org.checkerframework.checker.units.qual.N;
 import org.slf4j.Logger;
 
 import java.io.File;
@@ -239,10 +238,6 @@ public class SQLiteDatabaseConnector {
 
 
     // Methods to get other information, given a Minecraft UUID
-    public String getUsernameFromMinecraftUUID(@Nonnull UUID account) {
-        return (String) getColumnFrom(DatabaseColumns.minecraftUUID, account.toString(), DatabaseColumns.minecraftUser);
-    }
-
     public String getDiscordIDFor(@Nonnull UUID account) {
         String discordId = (String) getColumnFrom(DatabaseColumns.minecraftUUID, account.toString(), DatabaseColumns.discordId);
         // If the Discord ID is actually a linking code, act as if there is no associated ID
@@ -333,25 +328,6 @@ public class SQLiteDatabaseConnector {
             }
         } catch (SQLException e) {
             logger.error("Unable to get Discord DM sender! Message ID='{}'. SQLException message: '{}'\n\tException: {}", messageID, e.getMessage(), Arrays.toString(e.getStackTrace()));
-            throw new RuntimeException(e);
-        }
-        return null;
-    }
-
-    public String getDiscordDMRecipient(@Nonnull String messageID) {
-        try {
-            PreparedStatement preparedStatement = connection.prepareStatement(
-                    "SELECT recipientID FROM discordDMs WHERE messageID = ?;"
-            );
-            // Use the account username for both the username and display name fields
-            preparedStatement.setString(1, messageID);
-
-            ResultSet resultSet = preparedStatement.executeQuery();
-            if (resultSet != null) {
-                return resultSet.getString(1);
-            }
-        } catch (SQLException e) {
-            logger.error("Unable to get Discord DM recipient! Message ID='{}'. SQLException message: '{}'\n\tException: {}", messageID, e.getMessage(), Arrays.toString(e.getStackTrace()));
             throw new RuntimeException(e);
         }
         return null;

@@ -7,12 +7,10 @@ import java.util.*;
 
 public class PrivateMessageCommand implements SimpleCommand {
     protected final MinecraftDiscordPlugin plugin;
-    private final DiscordBot discordBot;
     private final Config config;
 
-    public PrivateMessageCommand(MinecraftDiscordPlugin plugin, DiscordBot discordBot, Config config) {
+    public PrivateMessageCommand(MinecraftDiscordPlugin plugin, Config config) {
         this.plugin = plugin;
-        this.discordBot = discordBot;
         this.config = config;
     }
 
@@ -91,8 +89,8 @@ public class PrivateMessageCommand implements SimpleCommand {
 // Specifically handles the "reply" command (where the destination username is the
 // last person you messaged, and the entirety of the argument list is the message)
 class ReplyCommand extends PrivateMessageCommand {
-    public ReplyCommand(MinecraftDiscordPlugin plugin, DiscordBot discordBot, Config config) {
-        super(plugin, discordBot, config);
+    public ReplyCommand(MinecraftDiscordPlugin plugin, Config config) {
+        super(plugin, config);
     }
 
     @Override
