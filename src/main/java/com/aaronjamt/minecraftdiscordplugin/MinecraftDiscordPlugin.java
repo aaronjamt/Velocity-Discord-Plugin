@@ -282,6 +282,45 @@ public class MinecraftDiscordPlugin  {
             player.sendRichMessage(message);
         }
     }
+
+    public void sendPrivateMessage(UUID sourceAccount, UUID destinationAccount, String message) {
+        // Get nickname for each user
+        String sourceName = database.getMinecraftNicknameFor(sourceAccount);
+        String destinationName = database.getMinecraftNicknameFor(destinationAccount);
+
+        // Check if player is online and, if so, send them the message in-game
+        Optional<Player> destinationPlayerOptional = server.getPlayer(destinationAccount);
+        boolean playerOnline = destinationPlayerOptional.isPresent();
+        if (playerOnline) {
+            Player destinationPlayer = destinationPlayerOptional.get();
+            destinationPlayer.sendRichMessage(config.minecraftPrivateMessageFormat
+                    .replace("{sender}", sourceName)
+                    .replace("{recipient}", destinationName)
+                    .replace("{message}", message)
+            );
+        }
+
+        // Get linked Discord account IDs for both source and destination
+        String sourceDiscordID = database.getDiscordIDFor(sourceAccount);
+        if (sourceDiscordID == null) return;
+        String destinationDiscordID = database.getDiscordIDFor(destinationAccount);
+        if (destinationDiscordID == null) return;
+
+        // Check if player wants to receive Discord DMs while online/offline
+        if (playerOnline) {
+            if (!database.getOnlineDiscordDMs(destinationAccount)) return;
+        } else {
+            if (!database.getOfflineDiscordDMs(destinationAccount)) return;
+        }
+
+        // Send the message to the Discord account
+        discordBot.sendPrivateMessage(sourceDiscordID, destinationDiscordID,
+                config.discordPrivateMessageFormat
+                        .replace("{sender}", sourceName)
+                        .replace("{recipient}", destinationName)
+                        .replace("{message}", message)
+        );
+    }
 }
 
 class ChatMessage {

@@ -48,6 +48,7 @@ public class PrivateMessageCommand implements SimpleCommand {
         String destinationName = plugin.database.getMinecraftNicknameFor(destinationAccount);
 
         // Send message to source user, if not the same as the destination user
+        // This prevents sending the message twice if a user DMs themselves
         if (!sourceName.equals(destinationName)) {
             source.sendRichMessage(config.minecraftPrivateMessageFormat
                     .replace("{sender}", sourceName)
@@ -56,42 +57,14 @@ public class PrivateMessageCommand implements SimpleCommand {
             );
         }
 
-        // Check if player is online and, if so, send them the message in-game
-        Optional<Player> destinationPlayerOptional = plugin.server.getPlayer(destinationAccount);
-        boolean playerOnline = destinationPlayerOptional.isPresent();
-        if (playerOnline) {
-            Player destinationPlayer = destinationPlayerOptional.get();
-            destinationPlayer.sendRichMessage(config.minecraftPrivateMessageFormat
-                    .replace("{sender}", sourceName)
-                    .replace("{recipient}", destinationName)
-                    .replace("{message}", message)
-            );
-        }
-
-        // Get player's linked Discord account, if they have linked their account
-        String destinationDiscordID = plugin.database.getDiscordIDFor(destinationAccount);
-        if (destinationDiscordID == null) return;
-
-        // Check if player wants to receive Discord DMs while online/offline
-        if (playerOnline) {
-            if (!plugin.database.getOnlineDiscordDMs(destinationAccount)) return;
-        } else {
-            if (!plugin.database.getOfflineDiscordDMs(destinationAccount)) return;
-        }
-
-        // Send the message to the Discord account
-        discordBot.sendPrivateMessage(destinationDiscordID,
-                config.discordPrivateMessageFormat
-                        .replace("{sender}", sourceName)
-                        .replace("{recipient}", destinationName)
-                        .replace("{message}", message)
-        );
-
         // Update sender's reply user to the current destination (for the reply command)
         plugin.database.setMessageReplyUsername(sourceAccount, destinationUsername);
 
         // Update destination's reply user to the current sender (for the reply command)
         plugin.database.setMessageReplyUsername(destinationAccount, sourceName);
+
+        // Send the message to the destination
+        plugin.sendPrivateMessage(sourceAccount, destinationAccount, message);
     }
 
     @Override
