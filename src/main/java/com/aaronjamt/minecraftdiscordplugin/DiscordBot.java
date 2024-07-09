@@ -9,6 +9,7 @@ import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.*;
+import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent;
 import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
@@ -53,7 +54,7 @@ public class DiscordBot extends ListenerAdapter {
         this.config = config;
 
         logger.info("Logging into Discord...");
-        jda = JDABuilder.create(config.discordBotToken, GatewayIntent.MESSAGE_CONTENT, GatewayIntent.GUILD_MESSAGES, GatewayIntent.GUILD_MEMBERS, GatewayIntent.GUILD_PRESENCES)
+        jda = JDABuilder.create(config.discordBotToken, GatewayIntent.DIRECT_MESSAGES,      GatewayIntent.MESSAGE_CONTENT, GatewayIntent.GUILD_MESSAGES, GatewayIntent.GUILD_MEMBERS, GatewayIntent.GUILD_PRESENCES)
                 .addEventListeners(this)
                 .disableCache(CacheFlag.VOICE_STATE, CacheFlag.EMOJI, CacheFlag.STICKER, CacheFlag.SCHEDULED_EVENTS)
                 .setActivity(Activity.playing("Minecraft"))
@@ -261,10 +262,15 @@ public class DiscordBot extends ListenerAdapter {
 
     @Override
     public void onMessageReceived(MessageReceivedEvent event) {
-        // Ignore webhook messages
-        if (event.isWebhookMessage() || event.getMember() == null) return;
         // Ignore messages from us
         if (event.getAuthor() == jda.getSelfUser()) return;
+        // If the message is from a private channel, handle it separately
+        if (event.getChannel().getType() == ChannelType.PRIVATE) {
+            onPrivateMessageReceived(event);
+            return;
+        }
+        // Ignore webhook messages
+        if (event.isWebhookMessage() || event.getMember() == null) return;
         // Ignore messages to a different channel
         if (!event.getChannel().getId().equals(config.discordBotChannel)) return;
 
@@ -309,6 +315,33 @@ public class DiscordBot extends ListenerAdapter {
 
         // Kick the player
         player.get().disconnect(Component.text(config.discordUserLeftServerMessage));
+    }
+
+    private void onPrivateMessageReceived(MessageReceivedEvent event) {
+        User sourceUser = event.getAuthor();
+        Message message = event.getMessage();
+        String messageContent = message.getContentDisplay();
+
+        // Get the UUID of the user that is sending the reply
+        UUID sourceAccount = plugin.database.getAccountFromDiscord(sourceUser.getId());
+
+        if (message.getType() == MessageType.INLINE_REPLY) {
+            // Message Reference is the message that is being replied o
+            MessageReference messageReference = message.getMessageReference();
+            if (messageReference == null) return; // Should never be possible, since we checked the message type
+            messageReference.resolve().queue(repliedMessage -> {
+                // Get the ID of the message the user replied to, then find the Discord ID of its sender
+                String repliedId = repliedMessage.getId();
+                String discordID = plugin.database.getDiscordDMSender(repliedId);
+                // Use that discord ID to find the Minecraft username the user is replying to
+                UUID recipientAccount = plugin.database.getAccountFromDiscord(discordID);
+                plugin.sendPrivateMessage(sourceAccount, recipientAccount, messageContent);
+            });
+            return;
+        }
+
+        message.reply("Reply to an existing message in order to respond!").queue();
+        // TODO: Possibly allow replying to last person who messaged? Maybe alternate ways to specify destination?
     }
 
     void setChatMessageCallback(Consumer<ChatMessage> callback) {
@@ -387,7 +420,10 @@ public class DiscordBot extends ListenerAdapter {
             // Get our DMs with them
             member.getUser().openPrivateChannel().queue((channel) ->
                 // Send the message to them
-                channel.sendMessageEmbeds(embed).queue()
+                channel.sendMessageEmbeds(embed).queue(sentMessage ->
+                        // Add the message to the database
+                        plugin.database.addDiscordDM(sentMessage.getId(), sender, recipient)
+                )
             )
         );
     }

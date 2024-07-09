@@ -43,7 +43,7 @@ public class SQLiteDatabaseConnector {
         dc.setUrl("jdbc:sqlite:" + databaseFile.getAbsolutePath());
         connection = dc.getConnection();
 
-        // Create the database table if it doesn't exist
+        // Create the database tables if they don't exist
         Statement statement = connection.createStatement();
 
         statement.execute(
@@ -74,8 +74,13 @@ public class SQLiteDatabaseConnector {
                 + "ON accounts(discordId);"
         );
 
-        Statement statement = connection.createStatement();
-        statement.execute(sql);
+        statement.execute(
+              "CREATE TABLE IF NOT EXISTS discordDMs ("
+                + "messageID TEXT PRIMARY KEY,"
+                + "senderID TEXT,"
+                + "recipientID TEXT"
+                + ");"
+        );
     }
 
     // Checks the database to make sure the user is allowed to connect.
@@ -293,5 +298,62 @@ public class SQLiteDatabaseConnector {
     public void setMessageReplyUsername(@Nonnull UUID account, @Nonnull String destination) {
         updateColumnFor(DatabaseColumns.minecraftUUID, account.toString(), DatabaseColumns.msgReplyUser, destination);
         logger.info("Set message reply username for {} to {}.", account, destination);
+    }
+
+    // Methods for Discord DMs table
+    public void addDiscordDM(@Nonnull String messageID, @Nonnull String senderID, @Nonnull String recipientID) {
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement(
+                    "INSERT INTO discordDMs (messageID, senderID, recipientID) " +
+                            "VALUES (?, ?, ?)"
+            );
+            // Use the account username for both the username and display name fields
+            preparedStatement.setString(1, messageID);
+            preparedStatement.setString(2, senderID);
+            preparedStatement.setString(3, recipientID);
+
+            preparedStatement.execute();
+        } catch (SQLException e) {
+            logger.error("Unable to add Discord DM to table! Message ID='{}', sender ID='{}', recipient ID='{}'. SQLException message: '{}'\n\tException: {}", messageID, senderID, recipientID, e.getMessage(), Arrays.toString(e.getStackTrace()));
+            throw new RuntimeException(e);
+        }
+    }
+
+    public String getDiscordDMSender(@Nonnull String messageID) {
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement(
+                    "SELECT senderID FROM discordDMs WHERE messageID = ?;"
+            );
+            // Use the account username for both the username and display name fields
+            preparedStatement.setString(1, messageID);
+
+            ResultSet resultSet = preparedStatement.executeQuery();
+            if (resultSet != null) {
+                return resultSet.getString(1);
+            }
+        } catch (SQLException e) {
+            logger.error("Unable to get Discord DM sender! Message ID='{}'. SQLException message: '{}'\n\tException: {}", messageID, e.getMessage(), Arrays.toString(e.getStackTrace()));
+            throw new RuntimeException(e);
+        }
+        return null;
+    }
+
+    public String getDiscordDMRecipient(@Nonnull String messageID) {
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement(
+                    "SELECT recipientID FROM discordDMs WHERE messageID = ?;"
+            );
+            // Use the account username for both the username and display name fields
+            preparedStatement.setString(1, messageID);
+
+            ResultSet resultSet = preparedStatement.executeQuery();
+            if (resultSet != null) {
+                return resultSet.getString(1);
+            }
+        } catch (SQLException e) {
+            logger.error("Unable to get Discord DM recipient! Message ID='{}'. SQLException message: '{}'\n\tException: {}", messageID, e.getMessage(), Arrays.toString(e.getStackTrace()));
+            throw new RuntimeException(e);
+        }
+        return null;
     }
 }
