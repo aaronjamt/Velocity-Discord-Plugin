@@ -50,29 +50,41 @@ public class ConfigurationCommand implements SimpleCommand {
         UUID player = targetPlayer.getUniqueId();
 
         if (booleanOptions.contains(argv[0])) {
-            boolean value;
-            if (truthy.contains(argv[1].toLowerCase())) value = true;
-            else if (falsey.contains(argv[1].toLowerCase())) value = false;
-            else {
-                // It's not a valid boolean
-                invocation.source().sendPlainMessage("'" + argv[1] + "' is not a valid value! " + argv[0] + " is a true/false setting.");
-                return;
+            int value = -1;
+            if (argv.length > 1) {
+                if (truthy.contains(argv[1].toLowerCase())) value = 1;
+                else if (falsey.contains(argv[1].toLowerCase())) value = 0;
+                else {
+                    // It's not a valid boolean
+                    invocation.source().sendPlainMessage("'" + argv[1] + "' is not a valid value! " + argv[0] + " is a true/false setting.");
+                    return;
+                }
             }
             switch (argv[0]) {
                 case "discordDMsWhenOnline" -> {
-                    plugin.database.setOnlineDiscordDMs(player, value);
-                    invocation.source().sendPlainMessage(
-                            "You will " +
-                                    (value ? "" : "not ") +
-                                    "receive Discord DMs when players /msg you while you're on the server."
+                    // If there wasn't a new value to set, just get the current value and reply with the status
+                    if (value == -1) {
+                        value = plugin.database.getOnlineDiscordDMs(player) ? 1 : 0;
+                    } else {
+                        plugin.database.setOnlineDiscordDMs(player, value == 1);
+                    }
+                    invocation.source().sendRichMessage(
+                            "<gold>You will " +
+                                    (value == 1 ? "" : "<red>not</red> ") +
+                                    "receive Discord DMs while you're online.</gold>"
                     );
                 }
                 case "discordDMsWhenOffline" -> {
-                    plugin.database.setOfflineDiscordDMs(player, value);
-                    invocation.source().sendPlainMessage(
-                            "You will " +
-                                    (value ? "" : "not ") +
-                                    "receive Discord DMs when players /msg you while you're away from the server."
+                    // If there wasn't a new value to set, just get the current value and reply with the status
+                    if (value == -1) {
+                        value = plugin.database.getOfflineDiscordDMs(player) ? 1 : 0;
+                    } else {
+                        plugin.database.setOfflineDiscordDMs(player, value == 1);
+                    }
+                    invocation.source().sendRichMessage(
+                            "<gold>You will " +
+                                    (value == 1 ? "" : "<red>not</red> ") +
+                                    "receive Discord DMs while you're away.</gold>"
                     );
                 }
             }
