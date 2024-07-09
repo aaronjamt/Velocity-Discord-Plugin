@@ -1,5 +1,6 @@
 package com.aaronjamt.minecraftdiscordplugin;
 
+import org.checkerframework.checker.units.qual.N;
 import org.slf4j.Logger;
 
 import java.io.File;
@@ -27,7 +28,7 @@ public class SQLiteDatabaseConnector {
         minecraftName,
         discordId,
         onlineDiscordDMs,
-                offlineDiscordDMs,
+        offlineDiscordDMs,
         msgReplyUser
     }
 
@@ -43,25 +44,35 @@ public class SQLiteDatabaseConnector {
         connection = dc.getConnection();
 
         // Create the database table if it doesn't exist
-        String sql = "CREATE TABLE IF NOT EXISTS discord ("
+        Statement statement = connection.createStatement();
+
+        statement.execute(
+              "CREATE TABLE IF NOT EXISTS accounts ("
                 + "minecraftUUID TEXT PRIMARY KEY," // Minecraft UUID
                 + "minecraftUser TEXT,"             // Account username
                 + "minecraftName TEXT,"             // Account nickname
                 + "discordId TEXT,"                 // Discord Snowflake ID
                 // User preference flags
-                + "onlineDiscordDMs INTEGER,"            // Whether to send Discord DMs for private messages while the user is online
-                + "offlineDiscordDMs INTEGER,"           // Whether to send Discord DMs for private messages while the user is offline
+                + "onlineDiscordDMs INTEGER,"       // Whether to send Discord DMs for private messages while the user is online
+                + "offlineDiscordDMs INTEGER,"      // Whether to send Discord DMs for private messages while the user is offline
                 + "msgReplyUser TEXT"               // The username to reply to for /r, /reply
                 + ");"
+        );
 
-                + "CREATE UNIQUE INDEX IF NOT EXISTS idx_minecraftUser "
-                + "ON discord(minecraftUser);"
+        statement.execute(
+              "CREATE UNIQUE INDEX IF NOT EXISTS idx_minecraftUser "
+                + "ON accounts(minecraftUser);"
+        );
 
-                + "CREATE UNIQUE INDEX IF NOT EXISTS idx_minecraftName "
-                + "ON discord(minecraftName);"
+        statement.execute(
+              "CREATE UNIQUE INDEX IF NOT EXISTS idx_minecraftName "
+                + "ON accounts(minecraftName);"
+        );
 
-                + "CREATE UNIQUE INDEX IF NOT EXISTS idx_discordId "
-                + "ON discord(discordId);";
+        statement.execute(
+              "CREATE UNIQUE INDEX IF NOT EXISTS idx_discordId "
+                + "ON accounts(discordId);"
+        );
 
         Statement statement = connection.createStatement();
         statement.execute(sql);
@@ -73,7 +84,7 @@ public class SQLiteDatabaseConnector {
     // If the user is not in the database, adds them for the account linking process
     String checkAllowedToConnect(String minecraftUser, String minecraftUUID) {
         try {
-            PreparedStatement preparedStatement = connection.prepareStatement("SELECT discordId FROM discord WHERE minecraftUser = ? AND minecraftUUID = ?");
+            PreparedStatement preparedStatement = connection.prepareStatement("SELECT discordId FROM accounts WHERE minecraftUser = ? AND minecraftUUID = ?");
 
             preparedStatement.setString(1, minecraftUser);
             preparedStatement.setString(2, minecraftUUID);
@@ -92,7 +103,7 @@ public class SQLiteDatabaseConnector {
             } else {
                 // The user is not in the database, so add them and fall through to link code generation
                 preparedStatement = connection.prepareStatement(
-                        "INSERT INTO discord (minecraftUser, minecraftName, minecraftUUID) " +
+                        "INSERT INTO accounts (minecraftUser, minecraftName, minecraftUUID) " +
                                 "VALUES (?, ?, ?)"
                 );
                 // Use the account username for both the username and display name fields
@@ -110,7 +121,7 @@ public class SQLiteDatabaseConnector {
             String linkCode = new BigInteger(30, random).toString(32).toUpperCase();
 
             // Add the link code to the database
-            preparedStatement = connection.prepareStatement("UPDATE discord SET discordId = ? WHERE minecraftUser = ? AND minecraftUUID = ?");
+            preparedStatement = connection.prepareStatement("UPDATE accounts SET discordId = ? WHERE minecraftUser = ? AND minecraftUUID = ?");
             preparedStatement.setString(1, "LINK " + linkCode); // Prefix with "LINK" to identify this as a link code, rather than a Discord Snowflake ID
             preparedStatement.setString(2, minecraftUser);
             preparedStatement.setString(3, minecraftUUID);
@@ -154,7 +165,7 @@ public class SQLiteDatabaseConnector {
 
     void updateColumnFor(DatabaseColumns searchColumn, Object searchValue, DatabaseColumns targetColumn, Object targetValue) {
         try {
-            PreparedStatement preparedStatement = connection.prepareStatement("UPDATE discord SET " + targetColumn + " = ? WHERE " + searchColumn + " = ?");
+            PreparedStatement preparedStatement = connection.prepareStatement("UPDATE accounts SET " + targetColumn + " = ? WHERE " + searchColumn + " = ?");
             preparedStatement.setObject(1, targetValue);
             preparedStatement.setObject(2, searchValue);
             preparedStatement.execute();
@@ -172,7 +183,7 @@ public class SQLiteDatabaseConnector {
             // Column names are never loaded from user input and, even if they were to be, are passed via an Enum so that
             // we aren't vulnerable to SQL injection.
             PreparedStatement preparedStatement = connection.prepareStatement(
-                    "SELECT " + targetColumn + " FROM discord WHERE " + searchColumn + " = ?;"
+                    "SELECT " + targetColumn + " FROM accounts WHERE " + searchColumn + " = ?;"
             );
             preparedStatement.setObject(1, searchValue);
             ResultSet resultSet = preparedStatement.executeQuery();
@@ -191,7 +202,7 @@ public class SQLiteDatabaseConnector {
         List<String> result = new ArrayList<>();
         try {
             PreparedStatement preparedStatement = connection.prepareStatement(
-                    "SELECT minecraftUser FROM discord WHERE offlineDiscordDMs = 1;"
+                    "SELECT minecraftUser FROM accounts WHERE offlineDiscordDMs = 1;"
             );
             ResultSet resultSet = preparedStatement.executeQuery();
             while (resultSet.next()) {
