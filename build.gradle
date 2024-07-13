@@ -15,6 +15,13 @@ repositories {
         name = "papermc-repo"
         url = "https://repo.papermc.io/repository/maven-public/"
     }
+    maven {
+        name = "geysermc-repo"
+        url = "https://repo.opencollab.dev/main/"
+    }
+    flatDir {
+        dirs 'lib'
+    }
 }
 
 dependencies {
@@ -27,6 +34,9 @@ dependencies {
     shadow 'org.xerial:sqlite-jdbc:3.46.0.0'
     implementation 'org.tomlj:tomlj:1.1.1'
 
+    compileOnly('org.geysermc.geyser:api:2.2.0-SNAPSHOT')
+    compileOnly('org.geysermc.floodgate:api:2.2.2-SNAPSHOT')
+    compileOnly 'lib:EaglerXVelocity:Latest'
 }
 
  task copyJar(type: Exec) {
