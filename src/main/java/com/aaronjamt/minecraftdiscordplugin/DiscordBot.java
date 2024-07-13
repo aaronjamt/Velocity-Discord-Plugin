@@ -31,7 +31,8 @@ import org.slf4j.Logger;
 
 import javax.annotation.Nonnull;
 import java.awt.*;
-import java.time.Instant;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -112,29 +113,53 @@ public class DiscordBot extends ListenerAdapter {
         return message;
     }
 
-    void chatWebhookSendMessage(String username, String avatarUrl, String embedUsername, String embedAvatarUrl, String content) {
+    void chatWebhookSendMessage(String username, String avatarUrl, String embedUsername, String embedAvatarUrl, String content, PlayerPlatform.Platform platform, Color highlightColor) {
         if (chatWebhookUrl == null || chatWebhookUrl.isEmpty()) {
             logger.error("WARNING: Attempt to send send webhook message before chatWebhookUrl set!");
             return;
         }
 
-        WebhookEmbed embed = new WebhookEmbedBuilder()
+        // Since we upload the footer icon as an attachment, use an attachment:// URL here and upload with the same name later
+        WebhookEmbedBuilder embedBuilder = new WebhookEmbedBuilder()
                 .setDescription(content)
-                .setAuthor(new WebhookEmbed.EmbedAuthor(embedUsername, embedAvatarUrl, null))
-                .build();
+                .setColor(highlightColor == null ? null : highlightColor.getRGB())
+                .setAuthor(new WebhookEmbed.EmbedAuthor(embedUsername, embedAvatarUrl, null));
 
-        webhookSendEmbed(embed, username, avatarUrl);
+        try (WebhookClient chatWebhook = WebhookClient.withUrl(chatWebhookUrl)) {
+            WebhookMessageBuilder messageBuilder = new WebhookMessageBuilder()
+                    .setUsername(username)
+                    .setAvatarUrl(avatarUrl);
+
+            messageBuilder = addFooterToWebhookMessage(messageBuilder, embedBuilder, platform);
+
+            // Now that we've finalized the message, build & attach embed, then send it
+            messageBuilder.addEmbeds(embedBuilder.build());
+            chatWebhook.send(messageBuilder.build());
+        }
     }
 
-    void webhookSendEmbed(WebhookEmbed embed, String username, String avatarUrl) {
-        try (WebhookClient chatWebhook = WebhookClient.withUrl(chatWebhookUrl)) {
-            chatWebhook.send(new WebhookMessageBuilder()
-                    .setUsername(username)
-                    .setAvatarUrl(avatarUrl)
-                    .addEmbeds(embed)
-                    .build()
-            );
+    private WebhookMessageBuilder addFooterToWebhookMessage(WebhookMessageBuilder messageBuilder, WebhookEmbedBuilder embedBuilder, PlayerPlatform.Platform platform) {
+        WebhookMessageBuilder originalMessageBuilder = messageBuilder;
+
+        if (platform != null) {
+            try (InputStream platformIconInputStream = getClass().getResourceAsStream(platform.getIconPath())) {
+                if (platformIconInputStream == null) throw new IOException(); // Causes us to re-send without the footer
+
+                // Now that we've got an InputStream for the platform icon, create and add the footer
+
+                // Attach the footer icon to the message
+                messageBuilder = messageBuilder.addFile("footericon.png", platformIconInputStream);
+                // Add the attached image to the footer
+                embedBuilder.setFooter(new WebhookEmbed.EmbedFooter(
+                        "Currently playing on " + platform, "attachment://footericon.png"
+                ));
+            } catch (IOException ignored) {
+                // If we can't read the footer image, just return the original,
+                // unmodified WebhookMessageBuilder
+                return originalMessageBuilder;
+            }
         }
+        return messageBuilder;
     }
 
     @Override
@@ -373,19 +398,13 @@ public class DiscordBot extends ListenerAdapter {
                 ).queue();
     }
 
-    public void sendAnnouncement(Color highlightColor, String message, String playerName, String playerIcon) {
-        chatChannel.sendMessageEmbeds(new EmbedBuilder()
-                .setColor(highlightColor.getRGB())
-                .setAuthor(playerName, null, playerIcon)
-                .setTimestamp(Instant.now())
-                .setDescription(message)
-                .build()).queue();
+    public void sendAnnouncement(Color highlightColor, String message, String playerName, String playerIcon, PlayerPlatform.Platform platform) {
+        SelfUser botUser = jda.getSelfUser();
+        chatWebhookSendMessage(botUser.getEffectiveName(), botUser.getAvatarUrl(), playerName, playerIcon, message, platform, highlightColor);
     }
 
     public void sendAnnouncement(String message) {
-        chatChannel.sendMessageEmbeds(new EmbedBuilder()
-                .setDescription(message)
-                .build()).queue();
+        sendAnnouncement(null, message, null, null, null);
     }
 
     public void sendAnnouncementSync(String message) {

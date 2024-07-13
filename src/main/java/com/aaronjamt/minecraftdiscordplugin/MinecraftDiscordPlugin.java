@@ -40,6 +40,7 @@ public class MinecraftDiscordPlugin  {
     final Config config;
     private final DiscordBot discordBot;
     final SQLiteDatabaseConnector database;
+    private final PlayerPlatform playerPlatform;
 
     @Inject
     public MinecraftDiscordPlugin(ProxyServer server, Logger logger, @DataDirectory Path dataDirectory) {
@@ -105,6 +106,9 @@ public class MinecraftDiscordPlugin  {
             server.shutdown();
                 throw new RuntimeException(e);
         }
+
+        // Set up player platform module
+        playerPlatform = new PlayerPlatform(logger);
     }
 
     @Subscribe
@@ -167,7 +171,7 @@ public class MinecraftDiscordPlugin  {
         }
         sendMessageToAll(message);
 
-        discordBot.sendAnnouncement(discordColor, message, mcName, mcIcon);
+        discordBot.sendAnnouncement(discordColor, message, mcName, mcIcon, playerPlatform.getPlayerPlatform(player));
     }
 
     @Subscribe
@@ -183,7 +187,7 @@ public class MinecraftDiscordPlugin  {
         String message = config.minecraftPlayerLeaveMessage.replace("{username}", mcName);
         sendMessageToAll(message);
 
-        discordBot.sendAnnouncement(Color.red, message, mcName, mcIcon);
+        discordBot.sendAnnouncement(Color.red, message, mcName, mcIcon, playerPlatform.getPlayerPlatform(player));
     }
 
     @Subscribe(order = PostOrder.FIRST)
@@ -215,8 +219,14 @@ public class MinecraftDiscordPlugin  {
         // TODO: This should probably have a config option and/or be configurable per-user and/or per-Discord-account
         message = discordBot.replaceMentions(message);
 
+        // Get Minecraft platform and associated icon
+        //PlayerPlatform.Platform platform = playerPlatform.getPlayerPlatform(player);
+        // Having the platform information in the footer of every single message seems overly verbose.
+        // The foundation is there to allow this, but for now I'm disabling it.
+        PlayerPlatform.Platform platform = null;
+
         // Send message to Discord
-        discordBot.chatWebhookSendMessage(discordName, discordIcon, playerName, mcIcon, message);
+        discordBot.chatWebhookSendMessage(discordName, discordIcon, playerName, mcIcon, message, platform, null);
     }
 
     void sendChatMessage(ChatMessage message) {
