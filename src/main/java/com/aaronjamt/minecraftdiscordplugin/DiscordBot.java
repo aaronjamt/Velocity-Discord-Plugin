@@ -123,7 +123,9 @@ public class DiscordBot extends ListenerAdapter {
         WebhookEmbedBuilder embedBuilder = new WebhookEmbedBuilder()
                 .setDescription(content)
                 .setColor(highlightColor == null ? null : highlightColor.getRGB())
-                .setAuthor(new WebhookEmbed.EmbedAuthor(embedUsername, embedAvatarUrl, null));
+                .setAuthor(embedUsername == null ? null :
+                        new WebhookEmbed.EmbedAuthor(embedUsername, embedAvatarUrl, null)
+                );
 
         try (WebhookClient chatWebhook = WebhookClient.withUrl(chatWebhookUrl)) {
             WebhookMessageBuilder messageBuilder = new WebhookMessageBuilder()

@@ -238,7 +238,7 @@ public class MinecraftDiscordPlugin  {
             discName = discordBot.getUsernameFromID(message.user);
 
             // Look for a linked Minecraft account
-            UUID mcUUID = database.getUUIDFromName(message.user);
+            UUID mcUUID = database.getAccountFromDiscord(message.user);
             if (mcUUID != null) {
                 mcName = database.getMinecraftNicknameFor(mcUUID);
                 if (mcName == null) {
