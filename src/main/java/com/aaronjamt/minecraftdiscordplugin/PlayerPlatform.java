@@ -80,7 +80,31 @@ public class PlayerPlatform {
         } else logger.info("Not checking whether player {} is a EaglerCraft player: EaglerCraft not installed!", playerID);
 
         // If the player isn't any of the above, assume they're on Java
-        return Platform.JAVA_OR_UNKNOWN;
+        // Add client version and branding as well, since we can access that information
+        // (EaglerCraft is stuck on 1.8.8 and Geyser always uses the latest protocol, so
+        // neither is very useful, and Geyser/Floodgate isn't necessarily accurate)
+        Platform result = Platform.JAVA_OR_UNKNOWN;
+
+        // Get Minecraft version
+        String minVersion = player.getProtocolVersion().getVersionIntroducedIn();
+        String maxVersion = player.getProtocolVersion().getMostRecentSupportedVersion();
+        String version;
+        if (minVersion.equals(maxVersion)) {
+            // Only one possible version, just give that version
+            version = minVersion;
+        } else {
+            // Multiple possible versions, give the range
+            version = String.format("%s - %s", minVersion, maxVersion);
+        }
+
+        // Get client brand (i.e. vanilla, forge, fabric)
+        String clientBrand = player.getClientBrand();
+        if (clientBrand == null) clientBrand = "";
+        else clientBrand = String.format("(%s)", clientBrand);
+
+        // Update the display name and return
+        result.displayName = String.format("Java %s %s", version, clientBrand);
+        return result;
     }
 
     // TODO: These emojis don't seem to render properly, at least in my limited testing of "trying it once and giving up". Need to fix!
@@ -128,7 +152,7 @@ public class PlayerPlatform {
         private static final Platform[] ALL_PLATFORMS = values();
 
         private final String bedrockName;
-        private final String displayName;
+        private String displayName;
         private final String iconName;
 
         Platform(String bedrockName, String displayName, String iconName) {
