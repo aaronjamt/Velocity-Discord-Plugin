@@ -1,0 +1,9 @@
+name: VelocityDiscordPlugin
+prefix: VelocityDiscord
+description: Velocity Discord Plugin (Bukkit/Spigot/Paper/Folia Helper)
+authors: [ Aaronjamt ]
+main: com.aaronjamt.minecraftdiscordplugin.serverhelper.SpigotPlugin
+website: 'https://github.com/aaronjamt/Velocity-Discord-Plugin'
+version: '0.0.1'
+api-version: '1.14'
+folia-supported: true

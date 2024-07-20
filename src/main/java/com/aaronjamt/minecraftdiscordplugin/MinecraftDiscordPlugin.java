@@ -1,5 +1,6 @@
 package com.aaronjamt.minecraftdiscordplugin;
 
+import com.google.common.io.ByteArrayDataInput;
 import com.google.inject.Inject;
 import com.velocitypowered.api.command.CommandManager;
 import com.velocitypowered.api.event.PostOrder;
@@ -7,8 +8,10 @@ import com.velocitypowered.api.event.ResultedEvent;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.connection.DisconnectEvent;
 import com.velocitypowered.api.event.connection.LoginEvent;
+import com.velocitypowered.api.event.connection.PluginMessageEvent;
 import com.velocitypowered.api.event.player.PlayerChatEvent;
 import com.velocitypowered.api.event.player.ServerConnectedEvent;
+import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
 import com.velocitypowered.api.event.proxy.ProxyReloadEvent;
 import com.velocitypowered.api.event.proxy.ProxyShutdownEvent;
 import com.velocitypowered.api.plugin.Plugin;
@@ -16,6 +19,7 @@ import com.velocitypowered.api.plugin.annotation.DataDirectory;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.ServerConnection;
+import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
 import net.kyori.adventure.text.Component;
 import org.slf4j.Logger;
 
@@ -24,6 +28,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -41,6 +46,8 @@ public class MinecraftDiscordPlugin  {
     private final DiscordBot discordBot;
     final SQLiteDatabaseConnector database;
     private final PlayerPlatform playerPlatform;
+
+    public static final MinecraftChannelIdentifier CHANNEL_IDENTIFIER = MinecraftChannelIdentifier.from(Constants.COMMUNICATION_CHANNEL);
 
     @Inject
     public MinecraftDiscordPlugin(ProxyServer server, Logger logger, @DataDirectory Path dataDirectory) {
@@ -109,6 +116,12 @@ public class MinecraftDiscordPlugin  {
 
         // Set up player platform module
         playerPlatform = new PlayerPlatform(logger);
+    }
+
+    @Subscribe
+    public void onProxyInitialization(ProxyInitializeEvent event) {
+        // Register for Bungeecord-compatible plugin messages
+        server.getChannelRegistrar().register(CHANNEL_IDENTIFIER);
     }
 
     @Subscribe
@@ -227,6 +240,42 @@ public class MinecraftDiscordPlugin  {
 
         // Send message to Discord
         discordBot.chatWebhookSendMessage(discordName, discordIcon, playerName, mcIcon, null, null, null, message, platform, null);
+    }
+
+    @Subscribe(order = PostOrder.FIRST)
+    public void onPluginMessageFromBackend(PluginMessageEvent event) {
+        logger.info("Plugin message from backend!");
+        if (!(event.getSource() instanceof ServerConnection backend)) {
+            return;
+        }
+
+        Player player = backend.getPlayer();
+        String playerName = player.getUsername();
+        String playerIcon = String.format(config.minecraftHeadURL, player.getUniqueId().toString().replaceAll("-", ""), playerName);
+
+        ByteArrayDataInput buffer = event.dataAsDataStream();
+        String eventType = buffer.readUTF();
+        switch (eventType) {
+            case "PlayerDeath":
+                String message = buffer.readUTF();
+                discordBot.sendAnnouncement(new Color(0xff7f00), message, playerName, playerIcon, null);
+
+                break;
+            case "PlayerAdvancement":
+                String advancementType = buffer.readUTF();
+                boolean isChallenge = buffer.readBoolean();
+                String advancementTitle = buffer.readUTF();
+                String advancementDescription = buffer.readUTF();
+
+                discordBot.sendAnnouncement(isChallenge ? new Color(0x9400d3): Color.blue, advancementType, advancementTitle, playerName, playerIcon, advancementDescription, null, null);
+                break;
+        }
+
+        String serverName = backend.getServerInfo().getName();
+        String identifier = event.getIdentifier().getId();
+        String data = Arrays.toString(event.getData());
+
+        logger.info("Got plugin message from backend! Server='{}', event='{}', player='{}', identifier='{}', data: {}", serverName, eventType, playerName, identifier, data);
     }
 
     void sendChatMessage(ChatMessage message) {

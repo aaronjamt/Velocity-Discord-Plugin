@@ -11,6 +11,7 @@ version = '1.0-SNAPSHOT'
 
 repositories {
     mavenCentral()
+    maven { url 'https://jitpack.io' }
     maven {
         name = "papermc-repo"
         url = "https://repo.papermc.io/repository/maven-public/"
@@ -18,6 +19,10 @@ repositories {
     maven {
         name = "geysermc-repo"
         url = "https://repo.opencollab.dev/main/"
+    }
+    maven {
+        name = "spigotmc-repo"
+        url = "https://hub.spigotmc.org/nexus/content/repositories/snapshots/"
     }
     flatDir {
         dirs 'lib'
@@ -37,6 +42,10 @@ dependencies {
     compileOnly('org.geysermc.geyser:api:2.2.0-SNAPSHOT')
     compileOnly('org.geysermc.floodgate:api:2.2.2-SNAPSHOT')
     compileOnly 'lib:EaglerXVelocity:Latest'
+
+    compileOnly 'org.spigotmc:spigot-api:1.13.2-R0.1-SNAPSHOT'
+
+    implementation 'com.github.CroaBeast:AdvancementInfo:1e09f8c53a'
 }
 
  task copyJar(type: Exec) {
