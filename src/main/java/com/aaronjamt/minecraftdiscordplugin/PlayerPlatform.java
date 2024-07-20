@@ -46,7 +46,7 @@ public class PlayerPlatform {
 
         if (hasGeyser) {
             if (GeyserApi.api().connectionByUuid(playerID) != null) {
-                logger.info("Player {} is a Geyser player!", playerID);
+                logger.debug("Player {} is a Geyser player!", playerID);
                 GeyserConnection connection = GeyserApi.api().connectionByUuid(playerID);
                 if (connection != null) {
                     BedrockPlatform platform = connection.platform();
@@ -56,28 +56,28 @@ public class PlayerPlatform {
                     } else
                         return Platform.PlatformByBedrockName(platform.toString());
                 }
-            } else logger.info("Player {} is not a Geyser player.", playerID);
-        } else logger.info("Not checking whether player {} is a Geyser player: Geyser not installed!", playerID);
+            } else logger.debug("Player {} is not a Geyser player.", playerID);
+        } else logger.debug("Not checking whether player {} is a Geyser player: Geyser not installed!", playerID);
 
         if (hasFloodgate) {
             if (FloodgateApi.getInstance().isFloodgatePlayer(playerID)) {
-                logger.info("Player {} is a Floodgate player!", playerID);
                 DeviceOs platform = FloodgateApi.getInstance().getPlayer(playerID).getDeviceOs();
+                logger.debug("Player {} is a Floodgate player!", playerID);
 
                 if (platform == DeviceOs.UNKNOWN) {
                     logger.warn("Player {} is a Floodgate player, but was unable to find exact player platform.", playerID);
                     return Platform.BEDROCK_GENERIC;
                 } else
                     return Platform.PlatformByBedrockName(platform.toString());
-            } else logger.info("Player {} is not a Floodgate player.", playerID);
-        } else logger.info("Not checking whether player {} is a Floodgate player: Floodgate not installed!", playerID);
+            } else logger.debug("Player {} is not a Floodgate player.", playerID);
+        } else logger.debug("Not checking whether player {} is a Floodgate player: Floodgate not installed!", playerID);
 
         if (hasEaglerCraft) {
             if (EaglerXVelocityAPIHelper.getEaglerHandle(player) != null) {
-                logger.info("Player {} is an EaglerCraft player!", playerID);
                 return Platform.EAGLER;
-            } else logger.info("Player {} is not a EaglerCraft player.", playerID);
-        } else logger.info("Not checking whether player {} is a EaglerCraft player: EaglerCraft not installed!", playerID);
+                logger.debug("Player {} is an EaglerCraft player!", playerID);
+            } else logger.debug("Player {} is not a EaglerCraft player.", playerID);
+        } else logger.debug("Not checking whether player {} is a EaglerCraft player: EaglerCraft not installed!", playerID);
 
         // If the player isn't any of the above, assume they're on Java
         // Add client version and branding as well, since we can access that information
