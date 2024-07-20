@@ -24,6 +24,10 @@ repositories {
         name = "spigotmc-repo"
         url = "https://hub.spigotmc.org/nexus/content/repositories/snapshots/"
     }
+    maven {
+        name = 'Fabric'
+        url = 'https://maven.fabricmc.net/'
+    }
     flatDir {
         dirs 'lib'
     }
@@ -45,6 +49,7 @@ dependencies {
 
     compileOnly 'org.spigotmc:spigot-api:1.13.2-R0.1-SNAPSHOT'
 
+    implementation "net.fabricmc:fabric-loader:0.7.3+build.176"
     implementation 'com.github.CroaBeast:AdvancementInfo:1e09f8c53a'
 }
 

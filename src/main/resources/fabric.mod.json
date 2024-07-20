@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "minecraftdiscordplugin",
+  "version": "0.0.1",
+  "name": "VelocityDiscordPlugin",
+  "authors": [
+    {
+      "name": "Aaronjamt"
+    }
+  ],
+  "contact": {
+    "repo": "https://github.com/aaronjamt/Velocity-Discord-Plugin"
+  },
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.aaronjamt.minecraftdiscordplugin.serverhelper.FabricPlugin"
+    ]
+  },
+  "mixins": [],
+  "depends": {
+    "fabricloader": ">=0.9.0",
+    "minecraft": "*"
+  }
+}
