@@ -113,7 +113,7 @@ public class DiscordBot extends ListenerAdapter {
         return message;
     }
 
-    void chatWebhookSendMessage(String username, String avatarUrl, String embedUsername, String embedAvatarUrl, String content, PlayerPlatform.Platform platform, Color highlightColor) {
+    void chatWebhookSendMessage(String username, String avatarUrl, String embedUsername, String embedAvatarUrl, String embedFooterText, String embedFooterIcon, String title, String content, PlayerPlatform.Platform platform, Color highlightColor) {
         if (chatWebhookUrl == null || chatWebhookUrl.isEmpty()) {
             logger.error("WARNING: Attempt to send send webhook message before chatWebhookUrl set!");
             return;
@@ -125,6 +125,12 @@ public class DiscordBot extends ListenerAdapter {
                 .setColor(highlightColor == null ? null : highlightColor.getRGB())
                 .setAuthor(embedUsername == null ? null :
                         new WebhookEmbed.EmbedAuthor(embedUsername, embedAvatarUrl, null)
+                )
+                .setTitle(title == null ? null :
+                        new WebhookEmbed.EmbedTitle(title, null)
+                )
+                .setFooter(embedFooterText == null ? null :
+                        new WebhookEmbed.EmbedFooter(embedFooterText, embedFooterIcon)
                 );
 
         try (WebhookClient chatWebhook = WebhookClient.withUrl(chatWebhookUrl)) {
@@ -400,10 +406,14 @@ public class DiscordBot extends ListenerAdapter {
                 ).queue();
     }
 
-    public void sendAnnouncement(Color highlightColor, String message, String playerName, String playerIcon, PlayerPlatform.Platform platform) {
+    public void sendAnnouncement(Color highlightColor, String title, String message, String playerName, String playerIcon, String footerText, String footerIcon, PlayerPlatform.Platform platform) {
         SelfUser botUser = jda.getSelfUser();
-        chatWebhookSendMessage(botUser.getEffectiveName(), botUser.getAvatarUrl(), playerName, playerIcon, message, platform, highlightColor);
+        chatWebhookSendMessage(botUser.getEffectiveName(), botUser.getAvatarUrl(), playerName, playerIcon, footerText, footerIcon, title, message, platform, highlightColor);
     }
+
+    public void sendAnnouncement(Color highlightColor, String message, String playerName, String playerIcon, PlayerPlatform.Platform platform) {
+        sendAnnouncement(highlightColor, message, null,  playerName, playerIcon, null, null, platform);
+}
 
     public void sendAnnouncement(String message) {
         sendAnnouncement(null, message, null, null, null);

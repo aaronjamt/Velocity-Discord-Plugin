@@ -226,7 +226,7 @@ public class MinecraftDiscordPlugin  {
         PlayerPlatform.Platform platform = null;
 
         // Send message to Discord
-        discordBot.chatWebhookSendMessage(discordName, discordIcon, playerName, mcIcon, message, platform, null);
+        discordBot.chatWebhookSendMessage(discordName, discordIcon, playerName, mcIcon, null, null, null, message, platform, null);
     }
 
     void sendChatMessage(ChatMessage message) {
