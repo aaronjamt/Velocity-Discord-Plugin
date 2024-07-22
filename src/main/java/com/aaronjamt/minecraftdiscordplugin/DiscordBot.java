@@ -421,7 +421,7 @@ public class DiscordBot extends ListenerAdapter {
 
     public void sendAnnouncementSync(String message) {
             chatChannel.sendMessageEmbeds(new EmbedBuilder()
-            .setDescription(message)
+            .setTitle(message)
             .build()).complete();
     }
 
