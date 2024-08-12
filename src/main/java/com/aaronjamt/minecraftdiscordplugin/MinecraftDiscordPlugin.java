@@ -321,6 +321,17 @@ public class MinecraftDiscordPlugin  {
             discName = discordBot.getUsernameFromID(database.getDiscordIDFor(mcUUID));
         }
 
+        String playerMessage = message.message;
+        // Prevent player from using color codes or escape sequences
+        playerMessage = playerMessage.replace("\\", "\\\\").replace("<", "\\<");
+        // Replace URLs with clickable links
+        playerMessage = playerMessage.replaceAll(
+                // URL match regex from https://stackoverflow.com/a/3809435
+                "(https?://(?:www\\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b[-a-zA-Z0-9()@:%_+.~#?&/=]*)",
+                // Replacement to make it clickable
+                "<u><click:open_url:'$1'>$1</click><u>"
+                );
+
         String finalMessage;
         if (message.isDiscordMessage)
             finalMessage = config.discordMessageTemplate;
