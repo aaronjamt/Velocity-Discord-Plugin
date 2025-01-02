@@ -28,9 +28,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.SQLException;
-import java.util.Arrays;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
+import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 @Plugin(
         id = "minecraftdiscordplugin",
@@ -46,6 +48,7 @@ public class MinecraftDiscordPlugin  {
     private final DiscordBot discordBot;
     final SQLiteDatabaseConnector database;
     private final PlayerPlatform playerPlatform;
+    private final Map<UUID, List<Long>> deathAlerts = new HashMap<>();
 
     public static final MinecraftChannelIdentifier CHANNEL_IDENTIFIER = MinecraftChannelIdentifier.from(Constants.COMMUNICATION_CHANNEL);
 
@@ -116,6 +119,28 @@ public class MinecraftDiscordPlugin  {
 
         // Set up player platform module
         playerPlatform = new PlayerPlatform(logger);
+
+        // Check death alerts every second
+        Runnable deathAlertsRunnable = () -> {
+            long timeNow = System.currentTimeMillis();
+
+            for (Map.Entry<UUID, List<Long>> deathAlert : deathAlerts.entrySet()) {
+                UUID mcUUID = deathAlert.getKey();
+                long diedAt = deathAlert.getValue().get(0);
+                long warnAt = deathAlert.getValue().get(1);
+                if (warnAt <= timeNow) {
+                    // Send the alert!
+                    String discordID = database.getDiscordIDFor(mcUUID);
+                    discordBot.sendDeathAlert(discordID, diedAt);
+
+                    // Remove the alert from the map since we've sent it
+                    deathAlerts.remove(deathAlert.getKey(), deathAlert.getValue());
+                }
+            }
+        };
+
+        ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
+        executor.scheduleAtFixedRate(deathAlertsRunnable, 1, 1, TimeUnit.SECONDS);
     }
 
     @Subscribe
@@ -202,6 +227,11 @@ public class MinecraftDiscordPlugin  {
         sendMessageToAll(message);
 
         discordBot.sendAnnouncement(Color.red, message, mcName, mcIcon, playerPlatform.getPlayerPlatform(player));
+
+        // Remove them from the list of players to send death alerts to, if they're in there, as
+        // otherwise they'll get a notification after they've left the game, which they probably
+        // don't want
+        deathAlerts.remove(player.getUniqueId());
     }
 
     @Subscribe(order = PostOrder.FIRST)
@@ -261,6 +291,21 @@ public class MinecraftDiscordPlugin  {
                 String message = buffer.readUTF();
                 discordBot.sendAnnouncement(new Color(0xff7f00), message, playerName, playerIcon, null);
 
+                double delaySeconds = database.getDeathAlertDelay(player.getUniqueId());
+                if (delaySeconds <= 0) break; // 0 or negative = disabled
+
+                long delayMillis = (long) (delaySeconds * 1000);
+
+                long diedAtTime = System.currentTimeMillis();
+                long warningTime = diedAtTime + delayMillis;
+
+                // Add the player to the list of alerts, and store both the time they died, and the time to warn them
+                deathAlerts.put(player.getUniqueId(), List.of(diedAtTime, warningTime));
+                break;
+            case "PlayerRespawn":
+                logger.warn("Player respawned! UUID: {}", player.getUniqueId());
+                // Remove the player from the list so they aren't alerted
+                deathAlerts.remove(player.getUniqueId());
                 break;
             case "PlayerAdvancement":
                 String advancementType = buffer.readUTF();

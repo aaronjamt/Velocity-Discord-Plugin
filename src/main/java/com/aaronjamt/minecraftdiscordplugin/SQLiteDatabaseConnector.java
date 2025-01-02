@@ -28,6 +28,7 @@ public class SQLiteDatabaseConnector {
         discordId,
         onlineDiscordDMs,
         offlineDiscordDMs,
+        deathAlertDelay,
         msgReplyUser
     }
 
@@ -54,6 +55,7 @@ public class SQLiteDatabaseConnector {
                 // User preference flags
                 + "onlineDiscordDMs INTEGER,"       // Whether to send Discord DMs for private messages while the user is online
                 + "offlineDiscordDMs INTEGER,"      // Whether to send Discord DMs for private messages while the user is offline
+                + "deathAlertDelay INTEGER,"        // How many milliseconds to wait after a death before alerting (if they don't respawn)
                 + "msgReplyUser TEXT"               // The username to reply to for /r, /reply
                 + ");"
         );
@@ -257,6 +259,10 @@ public class SQLiteDatabaseConnector {
         return (int) getColumnFrom(DatabaseColumns.minecraftUUID, account.toString(), DatabaseColumns.onlineDiscordDMs) == 1;
     }
 
+    public double getDeathAlertDelay(@Nonnull UUID account) {
+        return (double) getColumnFrom(DatabaseColumns.minecraftUUID, account.toString(), DatabaseColumns.deathAlertDelay);
+    }
+
     public String getMessageReplyUsername(@Nonnull UUID account) {
         return (String) getColumnFrom(DatabaseColumns.minecraftUUID, account.toString(), DatabaseColumns.msgReplyUser);
     }
@@ -288,6 +294,10 @@ public class SQLiteDatabaseConnector {
 
     public void setOfflineDiscordDMs(@Nonnull UUID account, boolean value) {
         updateColumnFor(DatabaseColumns.minecraftUUID, account.toString(), DatabaseColumns.offlineDiscordDMs, value ? 1 : 0);
+    }
+
+    public void setDeathAlertDelay(@Nonnull UUID account, double seconds) {
+        updateColumnFor(DatabaseColumns.minecraftUUID, account.toString(), DatabaseColumns.deathAlertDelay, seconds);
     }
 
     public void setMessageReplyUsername(@Nonnull UUID account, @Nonnull String destination) {

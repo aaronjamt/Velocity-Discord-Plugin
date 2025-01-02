@@ -29,6 +29,15 @@ public class SpigotPlugin extends JavaPlugin implements Listener {
         this.getServer().getMessenger().unregisterOutgoingPluginChannel(this);
     }
 
+    // Creates a ByteArrayDataOutput with the given event type string
+    // This wrapper is just so we don't copy+paste this and manage to screw
+    // it up, to guarantee consistent formatting of at least this part
+    ByteArrayDataOutput outputForType(String eventType) {
+        ByteArrayDataOutput out = ByteStreams.newDataOutput();
+        out.writeUTF(eventType);
+        return out;
+    }
+
     @EventHandler(priority = EventPriority.MONITOR)
     public void onDeath(PlayerDeathEvent e) {
         Player player = e.getEntity();
@@ -36,10 +45,16 @@ public class SpigotPlugin extends JavaPlugin implements Listener {
         String deathMessage = e.getDeathMessage();
         if (deathMessage == null) deathMessage = String.format("%s died!", player.getDisplayName());
 
-        ByteArrayDataOutput out = ByteStreams.newDataOutput();
-        out.writeUTF("PlayerDeath");
+        ByteArrayDataOutput out = outputForType("PlayerDeath");
         out.writeUTF(deathMessage);
+        player.sendPluginMessage(this, Constants.COMMUNICATION_CHANNEL, out.toByteArray());
+    }
 
+    @EventHandler()
+    public void onRespawn(PlayerRespawnEvent e) {
+        Player player = e.getPlayer();
+
+        ByteArrayDataOutput out = outputForType("PlayerRespawn");
         player.sendPluginMessage(this, Constants.COMMUNICATION_CHANNEL, out.toByteArray());
     }
 
@@ -59,8 +74,9 @@ public class SpigotPlugin extends JavaPlugin implements Listener {
         if (icon != null)
             player.sendMessage(icon.getType().toString());
 
-        ByteArrayDataOutput out = ByteStreams.newDataOutput();
-        out.writeUTF("PlayerAdvancement");
+        ByteArrayDataOutput out = outputForType("PlayerAdvancement");
+
+        // Send the advancement information
         out.writeUTF(advancementType);
         out.writeBoolean(info.getFrame() == AdvancementInfo.Frame.CHALLENGE); // For purple color
         out.writeUTF(info.getTitle());

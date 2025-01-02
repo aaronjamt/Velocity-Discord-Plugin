@@ -8,7 +8,7 @@ import java.util.*;
 public class ConfigurationCommand implements SimpleCommand {
     private final MinecraftDiscordPlugin plugin;
 
-    private final List<String> configOptions = List.of("discordDMsWhenOnline", "discordDMsWhenOffline");
+    private final List<String> configOptions = List.of("discordDMsWhenOnline", "discordDMsWhenOffline", "deathAlertDelay");
     private final List<String> booleanOptions = List.of("discordDMsWhenOnline", "discordDMsWhenOffline");
     private final List<String> truthy = List.of("true", "enable", "yes", "on", "y", "1", "+");
     private final List<String> falsey = List.of("false", "disable", "no", "off", "n", "0", "-");
@@ -85,6 +85,35 @@ public class ConfigurationCommand implements SimpleCommand {
                     );
                 }
             }
+        } else if (Objects.equals(argv[0], "deathAlertDelay")) {
+            // Get the current value
+            double delaySeconds = plugin.database.getDeathAlertDelay(player);
+
+            if (argv.length > 1) {
+                // Change the value
+                try {
+                    delaySeconds = Double.parseDouble(argv[1]);
+                    plugin.database.setDeathAlertDelay(player, delaySeconds);
+                } catch (NumberFormatException ignored) {
+                    // It's not a valid float
+                    invocation.source().sendPlainMessage("'" + argv[1] + "' is not a valid value! " + argv[0] + " is a numerical setting.");
+                    return;
+                }
+            }
+
+            // Show the current/new value
+            if (delaySeconds > 0)
+                invocation.source().sendRichMessage(
+                        "<gold>You will be notified if you don't respawn for " +
+                                "<red>" + delaySeconds + "</red> " +
+                                "seconds after you die.</gold>"
+                );
+            else {
+                invocation.source().sendRichMessage(
+                        "<gold>You will <red>not</red> be notified if you don't " +
+                                "respawn after you die.</gold>"
+                );
+            }
         } /* add else-if's here */ else {
             invocation.source().sendPlainMessage("Unknown configuration option '" + argv[0] + "'. Type '/discord help' for valid options.");
         }
@@ -102,6 +131,8 @@ public class ConfigurationCommand implements SimpleCommand {
                 if (booleanOptions.contains(invocation.arguments()[0])) {
                     // It's a boolean command, suggest "yes" and "no"
                     return List.of("yes", "no");
+                } else if (invocation.arguments()[0].equals("deathAlertDelay")) {
+                    return List.of("0","60","120","150","180","240");
                 }// Success
                 break;
             // etc

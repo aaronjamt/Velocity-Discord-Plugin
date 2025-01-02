@@ -25,6 +25,7 @@ import net.dv8tion.jda.api.interactions.components.text.TextInputStyle;
 import net.dv8tion.jda.api.interactions.modals.Modal;
 import net.dv8tion.jda.api.interactions.modals.ModalMapping;
 import net.dv8tion.jda.api.requests.GatewayIntent;
+import net.dv8tion.jda.api.utils.TimeFormat;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
 import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
@@ -496,6 +497,26 @@ public class DiscordBot extends ListenerAdapter {
                         plugin.database.addDiscordDM(sentMessage.getId(), sender, recipient)
                 )
             )
+        );
+    }
+
+    public void sendDeathAlert(String discordID, long timestamp) {
+        String message =
+                "You died " +
+                TimeFormat.RELATIVE.atTimestamp(timestamp) + // "2 minutes ago" or similar
+                " and haven't respawned yet! Your stuff may despawn.";
+        MessageEmbed embed = new EmbedBuilder()
+                .setDescription(message)
+                .setColor(Color.red)
+                .build();
+
+        // Get the Discord member for the recipient
+        guild.retrieveMember(UserSnowflake.fromId(discordID)).queue(member ->
+                // Get our DMs with them
+                member.getUser().openPrivateChannel().queue((channel) ->
+                        // Send the message to them
+                        channel.sendMessageEmbeds(embed).queue()
+                )
         );
     }
 
