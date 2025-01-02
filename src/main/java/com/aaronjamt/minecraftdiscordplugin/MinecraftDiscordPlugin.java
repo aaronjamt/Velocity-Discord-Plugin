@@ -157,7 +157,7 @@ public class MinecraftDiscordPlugin  {
 
         // If they're in the database, make sure they're still a member of the Discord server
         String discordID = database.getDiscordIDFor(player.getUniqueId());
-        if (!discordBot.isMemberInServer(discordID)) {
+        if (!discordBot.isMemberLinkedInServer(discordID)) {
             // Kick them with the appropriate message
             event.setResult(ResultedEvent.ComponentResult.denied(Component.text(config.discordUserLeftServerMessage)));
         }

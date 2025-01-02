@@ -13,6 +13,8 @@ public class Config {
     public String discordBotToken;
     public String discordBotGuild;
     public String discordBotChannel;
+    public String accountLinkingChannel;
+    public String discordAccountLinkedRole;
     public String minecraftHeadURL;
     public String sqliteDatabasePath;
     public String minecraftMessageTemplate;
@@ -52,6 +54,8 @@ public class Config {
             discordBotToken = parse.getString(List.of("discord", "token"));
             discordBotGuild = parse.getString(List.of("discord", "serverID"));
             discordBotChannel = parse.getString(List.of("discord", "channelID"));
+            accountLinkingChannel = parse.getString(List.of("discord", "accountLinkingChannelID"));
+            discordAccountLinkedRole = parse.getString(List.of("discord", "accountLinkedRole"));
             // Parse database settings
             sqliteDatabasePath = parse.getString(List.of("database", "filename"));
             // Parse messages

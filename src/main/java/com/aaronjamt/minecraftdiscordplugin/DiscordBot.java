@@ -5,6 +5,7 @@ import club.minnced.discord.webhook.send.WebhookEmbed;
 import club.minnced.discord.webhook.send.WebhookEmbedBuilder;
 import club.minnced.discord.webhook.send.WebhookMessageBuilder;
 import com.velocitypowered.api.proxy.Player;
+import net.dv8tion.jda.api.events.guild.member.GuildMemberRoleRemoveEvent;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
@@ -43,7 +44,9 @@ public class DiscordBot extends ListenerAdapter {
     private final Logger logger;
     private final JDA jda;
     private final Config config;
+    private Role accountLinkedRole;
     private TextChannel chatChannel;
+    private TextChannel accountLinkingChannel;
     private String chatWebhookUrl;
     private Guild guild;
 
@@ -175,6 +178,7 @@ public class DiscordBot extends ListenerAdapter {
         // Get appropriate guild & channel
         guild = Objects.requireNonNull(jda.getGuildById(config.discordBotGuild));
         chatChannel = guild.getChannelById(TextChannel.class, config.discordBotChannel);
+        accountLinkingChannel = guild.getChannelById(TextChannel.class, config.accountLinkingChannel);
 
         // We can't do much without a valid Discord channel
         if (chatChannel == null) {
@@ -217,6 +221,19 @@ public class DiscordBot extends ListenerAdapter {
                         command.delete().queue()
                 )
         );
+
+        // Find the "account linked" role, if set
+        String roleId = config.discordAccountLinkedRole.strip();
+        if (!roleId.isEmpty()) {
+            try {
+                accountLinkedRole = jda.getRoleById(config.discordAccountLinkedRole);
+                if (accountLinkedRole == null) {
+                    logger.warn("No Discord role found for ID: "+roleId);
+                }
+            } catch (Exception ex) {
+                logger.warn("Unable to find Discord account linked role: "+ex);
+            }
+        }
     }
 
     @Override
@@ -278,6 +295,15 @@ public class DiscordBot extends ListenerAdapter {
                 ).queue();
                 logger.info("Link updates done.");
 
+                // Give the Discord user the linked account role (if set)
+                if (accountLinkedRole != null) {
+                    Member member = event.getMember();
+                    if (member == null) {
+                        logger.warn("Tried to give newly-linked account the role, but `event.getMember()` is null?");
+                    } else {
+                        guild.addRoleToMember(event.getMember(), accountLinkedRole).queue();
+                    }
+                }
             }
         }
     }
@@ -322,6 +348,26 @@ public class DiscordBot extends ListenerAdapter {
                 event.getChannel().getName(),
                 true
         ));
+    }
+
+    @Override
+    public void onGuildMemberRoleRemove(@NotNull GuildMemberRoleRemoveEvent event) {
+        super.onGuildMemberRoleRemove(event);
+
+        // Check if this ID corresponds to a linked Discord account for the server
+        // If not, we don't need to do anything about it
+        UUID minecraftID = plugin.database.getAccountFromDiscord(event.getUser().getId());
+        if (minecraftID == null) return;
+
+        // Get the Minecraft player object
+        Optional<Player> player = plugin.server.getPlayer(minecraftID);
+        if (player.isEmpty()) return;
+
+        // We only care about the account linked role
+        if (!event.getRoles().contains(accountLinkedRole)) return;
+
+        // If the user lost their "account linked" role, kick them from the server
+        player.get().disconnect(Component.text(config.discordUserLeftServerMessage));
     }
 
     @Override
@@ -397,7 +443,7 @@ public class DiscordBot extends ListenerAdapter {
     }
 
     public void sendLinkAnnouncement(String message) {
-        chatChannel.sendMessageEmbeds(new EmbedBuilder()
+        accountLinkingChannel.sendMessageEmbeds(new EmbedBuilder()
                 .setDescription(message)
                 .build()
         )
@@ -450,7 +496,11 @@ public class DiscordBot extends ListenerAdapter {
         );
     }
 
-    public boolean isMemberInServer(String discordID) {
-        return guild.isMember(UserSnowflake.fromId(discordID));
+    public boolean isMemberLinkedInServer(String discordID) {
+        Member discordMember = guild.getMember(UserSnowflake.fromId(discordID));
+        // Check if they're in the server
+        if (discordMember == null) return false;
+        // Check if they have the "account linked" role
+        return discordMember.getRoles().contains(accountLinkedRole);
     }
 }
