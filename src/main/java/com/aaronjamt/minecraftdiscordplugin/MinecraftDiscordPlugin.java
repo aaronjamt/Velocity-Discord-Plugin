@@ -171,6 +171,7 @@ public class MinecraftDiscordPlugin  {
         String mcIcon = String.format(config.minecraftHeadURL, player.getUniqueId().toString().replaceAll("-", ""), mcName);
         String message;
         Color discordColor;
+
         // If they were already on a different server, show a "server switch" message instead
         if (event.getPreviousServer().isPresent()) {
             message = config.minecraftPlayerSwitchServersMessage
@@ -269,25 +270,29 @@ public class MinecraftDiscordPlugin  {
 
                 discordBot.sendAnnouncement(isChallenge ? new Color(0x9400d3): Color.blue, advancementType, advancementTitle, playerName, playerIcon, advancementDescription, null, null);
                 break;
+            default:
+                // Log any unknown plugin messages
+                String serverName = backend.getServerInfo().getName();
+                String identifier = event.getIdentifier().getId();
+                String data = Arrays.toString(event.getData());
+
+                logger.info("Got plugin message from backend! Server='{}', event='{}', player='{}', identifier='{}', data: {}", serverName, eventType, playerName, identifier, data);
         }
-
-        String serverName = backend.getServerInfo().getName();
-        String identifier = event.getIdentifier().getId();
-        String data = Arrays.toString(event.getData());
-
-        logger.info("Got plugin message from backend! Server='{}', event='{}', player='{}', identifier='{}', data: {}", serverName, eventType, playerName, identifier, data);
     }
 
     void sendChatMessage(ChatMessage message) {
         String mcName;
+        UUID mcUUID;
         String discName;
+        String discId;
 
         if (message.isDiscordMessage) {
             // If it's coming from Discord, treat the "user" field as a Discord account ID
-            discName = discordBot.getUsernameFromID(message.user);
+            discId = message.user;
+            discName = discordBot.getUsernameFromID(discId);
 
             // Look for a linked Minecraft account
-            UUID mcUUID = database.getAccountFromDiscord(message.user);
+            mcUUID = database.getAccountFromDiscord(message.user);
             if (mcUUID != null) {
                 mcName = database.getMinecraftNicknameFor(mcUUID);
                 if (mcName == null) {
@@ -308,7 +313,7 @@ public class MinecraftDiscordPlugin  {
             }
         } else {
             // If it's coming from Minecraft, treat the "user" field as a Minecraft account UUID
-            UUID mcUUID = UUID.fromString(message.user);
+            mcUUID = UUID.fromString(message.user);
             Optional<Player> potentialPlayer = server.getPlayer(mcUUID);
             if (potentialPlayer.isEmpty()) {
                 // We should never get here
@@ -318,7 +323,8 @@ public class MinecraftDiscordPlugin  {
                 mcName = potentialPlayer.get().getUsername();
             }
 
-            discName = discordBot.getUsernameFromID(database.getDiscordIDFor(mcUUID));
+            discId = database.getDiscordIDFor(mcUUID);
+            discName = discordBot.getUsernameFromID(discId);
         }
 
         String playerMessage = message.message;
@@ -341,7 +347,10 @@ public class MinecraftDiscordPlugin  {
         finalMessage = finalMessage
                 .replace("{minecraftUsername}", mcName)
                 .replace("{discordUsername}", discName)
-                .replace("{message}", message.message);
+                .replace("{message}", playerMessage)
+//                .replace("{minecraft_head}", new ChattableImage(logger, playerHeadUrl).toString())
+//                .replace("{discord_avatar}", new ChattableImage(logger, discordAvatarUrl).toString())
+        ;
 
         sendMessageToAll(finalMessage);
     }

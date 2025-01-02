@@ -58,7 +58,7 @@ public class DiscordBot extends ListenerAdapter {
         this.config = config;
 
         logger.info("Logging into Discord...");
-        jda = JDABuilder.create(config.discordBotToken, GatewayIntent.DIRECT_MESSAGES,      GatewayIntent.MESSAGE_CONTENT, GatewayIntent.GUILD_MESSAGES, GatewayIntent.GUILD_MEMBERS, GatewayIntent.GUILD_PRESENCES)
+        jda = JDABuilder.create(config.discordBotToken, GatewayIntent.DIRECT_MESSAGES, GatewayIntent.MESSAGE_CONTENT, GatewayIntent.GUILD_MESSAGES, GatewayIntent.GUILD_MEMBERS, GatewayIntent.GUILD_PRESENCES)
                 .addEventListeners(this)
                 .disableCache(CacheFlag.VOICE_STATE, CacheFlag.EMOJI, CacheFlag.STICKER, CacheFlag.SCHEDULED_EVENTS)
                 .setActivity(Activity.playing("Minecraft"))
@@ -99,7 +99,7 @@ public class DiscordBot extends ListenerAdapter {
             for (User user : jda.getUsers()) {
                 // If we find a user with that username, replace with the <@ID> format and end the loop early
                 if (user.getEffectiveName().equalsIgnoreCase(mention) || user.getName().equalsIgnoreCase(mention)) {
-                    logger.info("Is a match!");
+                    //logger.info("Name mentioned is a match!");
                     mention = String.format("<@%s>", user.getId());
                     foundMention = true;
                     break;
@@ -216,6 +216,7 @@ public class DiscordBot extends ListenerAdapter {
             sendAnnouncement(config.serverStartedMessage);
         });
 
+        // Remove any old Discord commands
         jda.retrieveCommands().queue(commands ->
                 commands.forEach(command ->
                         command.delete().queue()
@@ -282,18 +283,18 @@ public class DiscordBot extends ListenerAdapter {
                     logger.warn("Linking completed, but unable to find linking message to edit. Discord Snowflake ID: '{}', link code: '{}'.", userID, linkCode);
                     return;
                 }
-                logger.info("Removing button...");
+//                logger.info("Removing button...");
                 // Remove button
                 message.editMessageComponents().queue();
                 // Replace embed text
-                logger.info("Updating message...");
+//                logger.info("Updating message...");
                 message.editMessageEmbeds(new EmbedBuilder()
                         .setDescription(
                                 config.minecraftNewPlayerMessage.replace("{username}", plugin.database.getMinecraftNicknameFor(account))
                         )
                         .build()
                 ).queue();
-                logger.info("Link updates done.");
+//                logger.info("Link updates done.");
 
                 // Give the Discord user the linked account role (if set)
                 if (accountLinkedRole != null) {
@@ -307,8 +308,6 @@ public class DiscordBot extends ListenerAdapter {
             }
         }
     }
-
-
 
     @Override
     public void onMessageReceived(MessageReceivedEvent event) {
@@ -324,6 +323,7 @@ public class DiscordBot extends ListenerAdapter {
         // Ignore messages to a different channel
         if (!event.getChannel().getId().equals(config.discordBotChannel)) return;
 
+        /*
         logger.info("{} ({}) [@{} # {}] in {}: {}",
                 event.getMember().getEffectiveName(),
                 event.getAuthor().getGlobalName(),
@@ -332,6 +332,7 @@ public class DiscordBot extends ListenerAdapter {
                 event.getMessage().getChannel().getName(),
                 event.getMessage().getContentDisplay()
         );
+        */
 
         // If there's any attachments, add that information to the message
         int numAttachments = event.getMessage().getAttachments().size();
@@ -424,6 +425,7 @@ public class DiscordBot extends ListenerAdapter {
             logger.error("Unable to find Discord member for ID '{}'!", userID);
             return null;
         }
+        /*
         logger.info("Get member from ID {}: {} ({}) [@{} # {}]",
                 userID,
                 member.getEffectiveName(),
@@ -431,6 +433,7 @@ public class DiscordBot extends ListenerAdapter {
                 member.getUser().getName(),
                 member.getId()
         );
+         */
         return member;
     }
 

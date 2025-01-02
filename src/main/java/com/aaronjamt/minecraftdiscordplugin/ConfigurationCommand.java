@@ -3,10 +3,7 @@ package com.aaronjamt.minecraftdiscordplugin;
 import com.velocitypowered.api.command.SimpleCommand;
 import com.velocitypowered.api.proxy.Player;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 public class ConfigurationCommand implements SimpleCommand {
     private final MinecraftDiscordPlugin plugin;
