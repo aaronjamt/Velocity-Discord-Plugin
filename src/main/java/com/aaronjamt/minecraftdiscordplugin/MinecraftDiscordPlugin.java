@@ -170,7 +170,7 @@ public class MinecraftDiscordPlugin  {
         if (linkCode != null) {
             // Since we got a link code, they are not allowed to connect. Kick them and provide the link code.
             event.setResult(ResultedEvent.ComponentResult.denied(
-                    Component.text(config.playerNeedsToLinkMessage.replace("{code}", linkCode))
+                    Component.textOfChildren(Component.text(config.playerNeedsToLinkMessage.replace("{code}", linkCode)))
             ));
 
             logger.info("Sending announcement to link...");
@@ -286,6 +286,7 @@ public class MinecraftDiscordPlugin  {
 
         ByteArrayDataInput buffer = event.dataAsDataStream();
         String eventType = buffer.readUTF();
+
         switch (eventType) {
             case "PlayerDeath":
                 String message = buffer.readUTF();

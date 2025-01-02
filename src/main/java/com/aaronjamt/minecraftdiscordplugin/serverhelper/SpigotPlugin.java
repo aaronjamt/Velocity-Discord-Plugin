@@ -10,7 +10,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerAdvancementDoneEvent;
-import org.bukkit.inventory.ItemStack;
+import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class SpigotPlugin extends JavaPlugin implements Listener {
@@ -70,9 +70,10 @@ public class SpigotPlugin extends JavaPlugin implements Listener {
             case CHALLENGE -> "Challenge Complete!";
         };
 
-        ItemStack icon = info.getIcon();
-        if (icon != null)
-            player.sendMessage(icon.getType().toString());
+//        ItemStack icon = info.getIcon();
+//        if (icon != null)
+//            player.sendMessage(icon.getType().toString());
+        // Prints something like "GRASS_BLOCK", TODO can this be turned into an image for Discord?
 
         ByteArrayDataOutput out = outputForType("PlayerAdvancement");
 
