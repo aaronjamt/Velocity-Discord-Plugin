@@ -3,6 +3,7 @@ package com.aaronjamt.minecraftdiscordplugin;
 import club.minnced.discord.webhook.WebhookClient;
 import club.minnced.discord.webhook.send.WebhookEmbed;
 import club.minnced.discord.webhook.send.WebhookEmbedBuilder;
+import club.minnced.discord.webhook.send.WebhookMessage;
 import club.minnced.discord.webhook.send.WebhookMessageBuilder;
 import com.velocitypowered.api.proxy.Player;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRoleRemoveEvent;
@@ -137,16 +138,34 @@ public class DiscordBot extends ListenerAdapter {
                         new WebhookEmbed.EmbedFooter(embedFooterText, embedFooterIcon)
                 );
 
+        WebhookMessageBuilder messageBuilder = new WebhookMessageBuilder()
+                .setUsername(username)
+                .setAvatarUrl(avatarUrl);
+
+        messageBuilder = addFooterToWebhookMessage(messageBuilder, embedBuilder, platform);
+
+        // Now that we've finalized the message, build & attach the embed
+        messageBuilder.addEmbeds(embedBuilder.build());
+        final WebhookMessage message = messageBuilder.build();
+
+        // Send the message to the webhook
         try (WebhookClient chatWebhook = WebhookClient.withUrl(chatWebhookUrl)) {
-            WebhookMessageBuilder messageBuilder = new WebhookMessageBuilder()
-                    .setUsername(username)
-                    .setAvatarUrl(avatarUrl);
+            chatWebhook.send(message);
+        } catch (club.minnced.discord.webhook.exception.HttpException ex) {
+            // If there's an error, create a new webhook, assuming our old one was removed
+            chatChannel.createWebhook("Chat Relay Webhook").queue(newWebhook -> {
+                chatWebhookUrl = newWebhook.getUrl();
+                try (WebhookClient chatWebhook = WebhookClient.withUrl(chatWebhookUrl)) {
+                    chatWebhook.send(message);
+                } catch (club.minnced.discord.webhook.exception.HttpException ex2) {
+                    // If there's still an error, something is seriously wrong
+                    logger.error("Unable to send chat webhook message!");
+                }
 
-            messageBuilder = addFooterToWebhookMessage(messageBuilder, embedBuilder, platform);
-
-            // Now that we've finalized the message, build & attach embed, then send it
-            messageBuilder.addEmbeds(embedBuilder.build());
-            chatWebhook.send(messageBuilder.build());
+                // Don't bother trying to clean up other webhooks. We don't want to cause
+                // more issues, especially if there's multiple instances of this plugin
+                // trying to compete. When we restart, we'll clean it all up anyway.
+            });
         }
     }
 
