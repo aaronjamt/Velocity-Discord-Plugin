@@ -53,14 +53,6 @@ dependencies {
     implementation 'com.github.CroaBeast:AdvancementInfo:1e09f8c53a'
 }
 
- task copyJar(type: Exec) {
-    commandLine '/bin/bash', '-c', 'cp /home/aaronjamt/Documents/IdeaProjects/MinecraftDiscordPlugin/build/libs/MinecraftDiscordPlugin-1.0-SNAPSHOT-all.jar /home/aaronjamt/Downloads/mc/proxy-data/plugins/'
-}
-
-task restartProxy(type: Exec) {
-    commandLine '/usr/bin/env', '--', 'flatpak-spawn', '--host', 'docker', 'restart', 'mc_proxy_1'
-}
-
 def targetJavaVersion = 17
 java {
     def javaVersion = JavaVersion.toVersion(targetJavaVersion)
