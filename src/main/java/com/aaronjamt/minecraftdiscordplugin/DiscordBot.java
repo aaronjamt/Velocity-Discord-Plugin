@@ -424,6 +424,7 @@ public class DiscordBot extends ListenerAdapter {
                 // Get the ID of the message the user replied to, then find the Discord ID of its sender
                 String repliedId = repliedMessage.getId();
                 String discordID = plugin.database.getDiscordDMSender(repliedId);
+                if (discordID == null) return; // If it's not from a player DM, ignore it
                 // Use that discord ID to find the Minecraft username the user is replying to
                 UUID recipientAccount = plugin.database.getAccountFromDiscord(discordID);
                 plugin.sendPrivateMessage(sourceAccount, recipientAccount, messageContent);
