@@ -17,6 +17,8 @@ import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent;
 import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
+import net.dv8tion.jda.api.events.message.MessageUpdateEvent;
+import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
 import net.dv8tion.jda.api.events.session.ReadyEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.components.ActionRow;
@@ -53,6 +55,7 @@ public class DiscordBot extends ListenerAdapter {
     private Guild guild;
 
     private Consumer<ChatMessage> chatMessageCallback;
+    private Consumer<String> serverMessageCallback;
 
     DiscordBot(MinecraftDiscordPlugin plugin, Logger logger, Config config) {
         this.plugin = plugin;
@@ -60,7 +63,7 @@ public class DiscordBot extends ListenerAdapter {
         this.config = config;
 
         logger.info("Logging into Discord...");
-        jda = JDABuilder.create(config.discordBotToken, GatewayIntent.DIRECT_MESSAGES, GatewayIntent.MESSAGE_CONTENT, GatewayIntent.GUILD_MESSAGES, GatewayIntent.GUILD_MEMBERS, GatewayIntent.GUILD_PRESENCES)
+        jda = JDABuilder.create(config.discordBotToken, GatewayIntent.DIRECT_MESSAGES, GatewayIntent.MESSAGE_CONTENT, GatewayIntent.GUILD_MESSAGES, GatewayIntent.GUILD_MESSAGE_REACTIONS, GatewayIntent.GUILD_MEMBERS, GatewayIntent.GUILD_PRESENCES)
                 .addEventListeners(this)
                 .disableCache(CacheFlag.VOICE_STATE, CacheFlag.EMOJI, CacheFlag.STICKER, CacheFlag.SCHEDULED_EVENTS)
                 .setActivity(Activity.playing("Minecraft"))
@@ -330,6 +333,109 @@ public class DiscordBot extends ListenerAdapter {
     }
 
     @Override
+    public void onMessageReactionAdd(@NotNull MessageReactionAddEvent event) {
+        // Ignore messages from us
+        if (event.getUser() == jda.getSelfUser()) return;
+        // Ignore messages to a different channel
+        if (!event.getChannel().getId().equals(config.discordBotChannel)) return;
+        // Ignore if we don't send messages for reactions
+        if (config.discordMessageReactionTemplate == null) return;
+
+        String template = config.discordMessageReactionTemplate;
+
+        String reactedBy = event.retrieveUser().complete().getEffectiveName();
+        String reaction = event.getReaction().getEmoji().getName();
+        String reactedTo;
+
+        if (event.getMessageAuthorId().equals("0")) {
+            // ID of 0 means it came from a webhook, check the message to figure out which Minecraft user sent it
+            // To do this, we need to find the message the reaction is for, then fetch the player name from the embed
+            Message reactedMessage = chatChannel.retrieveMessageById(event.getMessageId()).complete();
+            if (reactedMessage == null) {
+                // This shouldn't ever be possible, as we just received a reaction event for this message, unless we're unable to view message history.
+                logger.error("Detected reaction to webhook message but was unable to find the message. Did you grant the bot access to read message history?");
+                return;
+            }
+
+            // If we aren't able to find that a Minecraft user sent this message, just
+            // show it in-game as if it came from a Discord user with the name of the
+            // webhook. This allows other webhooks (or non-Minecraft-chat webhooks from
+            // us) to show up properly in-game.
+            reactedTo = reactedMessage.getAuthor().getEffectiveName();
+
+            // Check if there is another template provided for Minecraft reactions
+            if (config.minecraftMessageReactionTemplate != null) {
+                // Now check if it was a reaction to a Minecraft chat message.
+                if (reactedMessage.getEmbeds().size() == 1) {
+                    MessageEmbed.AuthorInfo embedAuthor = reactedMessage.getEmbeds().get(0).getAuthor();
+                    if (embedAuthor != null) {
+                        String authorName = embedAuthor.getName();
+                        if (authorName != null) {
+                            template = config.minecraftMessageReactionTemplate;
+                            reactedTo = authorName;
+                        }
+                    }
+                }
+            }
+        } else {
+            // If it's not from a webhook, just send the name of the person it was a reaction to
+            Member author = guild.getMemberById(event.getMessageAuthorId());
+            if (author != null)
+                reactedTo = author.getEffectiveName();
+            else {
+                logger.error("Unable to determine who reacted to message!");
+                return;
+            }
+        }
+
+        serverMessageCallback.accept(
+                template
+                        .replace("{from}", reactedBy)
+                        .replace("{to}", reactedTo)
+                        .replace("{reaction}", reaction)
+        );
+    }
+
+    @Override
+    public void onMessageUpdate(@NotNull MessageUpdateEvent event) {
+        // Ignore messages from us
+        if (event.getAuthor() == jda.getSelfUser()) return;
+        // Ignore webhook messages
+        if (event.getMember() == null) return;
+        // Ignore messages to a different channel
+        if (!event.getChannel().getId().equals(config.discordBotChannel)) return;
+
+        String message = event.getMessage().getContentDisplay();
+
+        // If there's any attachments, add that information to the message
+        int numAttachments = event.getMessage().getAttachments().size();
+        if (numAttachments > 0) {
+            // If there's an actual message, add a space to separate the attachments suffix from the message
+            if (!event.getMessage().getContentDisplay().isEmpty()) message += " ";
+            message += "[" + numAttachments + " attachment" + (numAttachments == 1 ? "" : "s") + "]";
+        }
+
+        if (message.isEmpty()) {
+            logger.warn("Empty message from {} ({}) [@{} # {}] in {}",
+                    event.getMember().getEffectiveName(),
+                    event.getAuthor().getGlobalName(),
+                    event.getAuthor().getName(),
+                    event.getAuthor().getId(),
+                    event.getMessage().getChannel().getName()
+            );
+            return;
+        }
+
+        chatMessageCallback.accept(new ChatMessage(
+                event.getAuthor().getId(),
+                message,
+                event.getChannel().getName(),
+                true,
+                true
+        ));
+    }
+
+    @Override
     public void onMessageReceived(MessageReceivedEvent event) {
         // Ignore messages from us
         if (event.getAuthor() == jda.getSelfUser()) return;
@@ -438,6 +544,10 @@ public class DiscordBot extends ListenerAdapter {
 
     void setChatMessageCallback(Consumer<ChatMessage> callback) {
         chatMessageCallback = callback;
+    }
+
+    void setServerMessageCallback(Consumer<String> callback) {
+        serverMessageCallback = callback;
     }
 
     public Member getMemberFromID(String userID) {

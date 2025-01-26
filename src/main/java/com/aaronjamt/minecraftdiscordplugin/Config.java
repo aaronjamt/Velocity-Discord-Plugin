@@ -18,7 +18,10 @@ public class Config {
     public String minecraftHeadURL;
     public String sqliteDatabasePath;
     public String minecraftMessageTemplate;
+    public String minecraftMessageReactionTemplate;
     public String discordMessageTemplate;
+    public String discordMessageEditTemplate;
+    public String discordMessageReactionTemplate;
     public String noMinecraftAccountPlaceholder;
     public String minecraftPlayerJoinMessage;
     public String minecraftPlayerJoinUnlinkedMessage;
@@ -61,7 +64,10 @@ public class Config {
             // Parse messages
             // TODO: Clean up names and order
             minecraftMessageTemplate = parse.getString(List.of("messages", "minecraftMessageTemplate"));
+            minecraftMessageReactionTemplate = parse.getString(List.of("messages", "minecraftMessageReactionTemplate"));
             discordMessageTemplate = parse.getString(List.of("messages", "discordMessageTemplate"));
+            discordMessageEditTemplate = parse.getString(List.of("messages", "discordMessageEditTemplate"));
+            discordMessageReactionTemplate = parse.getString(List.of("messages", "discordMessageReactionTemplate"));
             noMinecraftAccountPlaceholder = parse.getString(List.of("messages", "noMinecraftAccountPlaceholder"));
             minecraftPlayerJoinMessage = parse.getString(List.of("messages", "minecraftPlayerJoinMessage"));
             minecraftPlayerJoinUnlinkedMessage = parse.getString(List.of("messages", "minecraftPlayerJoinUnlinkedMessage"));

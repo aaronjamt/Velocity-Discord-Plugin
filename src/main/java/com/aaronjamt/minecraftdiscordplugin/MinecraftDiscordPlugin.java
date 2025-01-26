@@ -69,6 +69,7 @@ public class MinecraftDiscordPlugin  {
         // Set up Discord bot
         discordBot = new DiscordBot(this, logger, config);
         discordBot.setChatMessageCallback(this::sendChatMessage);
+        discordBot.setServerMessageCallback(this::sendMessageToAll);
 
         // Register commands
         CommandManager commandManager = server.getCommandManager();
@@ -385,10 +386,20 @@ public class MinecraftDiscordPlugin  {
                 );
 
         String finalMessage;
-        if (message.isDiscordMessage)
-            finalMessage = config.discordMessageTemplate;
-        else
+        if (message.isDiscordMessage) {
+            if (message.isEditedMessage) {
+                // If it's edited and there's an edited message template, use that
+                if (config.discordMessageEditTemplate != null)
+                    finalMessage = config.discordMessageEditTemplate;
+                    // If it's edited and there's not an edited message template, don't send any message
+                else
+                    return;
+            } else {
+                finalMessage = config.discordMessageTemplate;
+            }
+        } else {
             finalMessage = config.minecraftMessageTemplate.replace("{server}", message.server);
+        }
 
         finalMessage = finalMessage
                 .replace("{minecraftUsername}", mcName)
@@ -447,11 +458,21 @@ class ChatMessage {
     public final String message;
     public final String server;
     public final boolean isDiscordMessage;
+    public final boolean isEditedMessage;
 
     ChatMessage(String user, String message, String server, boolean isDiscordMessage) {
         this.user = user;
         this.message = message;
         this.server = server;
         this.isDiscordMessage = isDiscordMessage;
+        this.isEditedMessage = false;
+    }
+
+    ChatMessage(String user, String message, String server, boolean isDiscordMessage, boolean isEditedMessage) {
+        this.user = user;
+        this.message = message;
+        this.server = server;
+        this.isDiscordMessage = isDiscordMessage;
+        this.isEditedMessage = isEditedMessage;
     }
 }
