@@ -38,6 +38,7 @@ import javax.annotation.Nonnull;
 import java.awt.*;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -51,8 +52,10 @@ public class DiscordBot extends ListenerAdapter {
     private Role accountLinkedRole;
     private TextChannel chatChannel;
     private TextChannel accountLinkingChannel;
-    private String chatWebhookUrl;
     private Guild guild;
+
+    // Use a different webhook for each player so they show up as different users in Discord notifications
+    private final HashMap<String, Webhook> webhooks = new HashMap<>();
 
     private Consumer<ChatMessage> chatMessageCallback;
     private Consumer<String> serverMessageCallback;
@@ -127,11 +130,6 @@ public class DiscordBot extends ListenerAdapter {
     }
 
     void chatWebhookSendMessage(String username, String avatarUrl, String embedUsername, String embedAvatarUrl, String embedFooterText, String embedFooterIcon, String title, String content, PlayerPlatform.Platform platform, Color highlightColor) {
-        if (chatWebhookUrl == null || chatWebhookUrl.isEmpty()) {
-            logger.error("WARNING: Attempt to send send webhook message before chatWebhookUrl set!");
-            return;
-        }
-
         // Since we upload the footer icon as an attachment, use an attachment:// URL here and upload with the same name later
         WebhookEmbedBuilder embedBuilder = new WebhookEmbedBuilder()
                 .setDescription(content)
@@ -150,34 +148,64 @@ public class DiscordBot extends ListenerAdapter {
                 .setUsername(username)
                 .setAvatarUrl(avatarUrl);
 
-        messageBuilder = addFooterToWebhookMessage(messageBuilder, embedBuilder, platform);
+        messageBuilder = addFooterToWebhookMessage(messageBuilder, embedBuilder, platform, title);
 
         // Now that we've finalized the message, build & attach the embed
         messageBuilder.addEmbeds(embedBuilder.build());
         final WebhookMessage message = messageBuilder.build();
 
-        // Send the message to the webhook
-        try (WebhookClient chatWebhook = WebhookClient.withUrl(chatWebhookUrl)) {
-            chatWebhook.send(message);
-        } catch (club.minnced.discord.webhook.exception.HttpException ex) {
-            // If there's an error, create a new webhook, assuming our old one was removed
-            chatChannel.createWebhook("Chat Relay Webhook").queue(newWebhook -> {
-                chatWebhookUrl = newWebhook.getUrl();
-                try (WebhookClient chatWebhook = WebhookClient.withUrl(chatWebhookUrl)) {
-                    chatWebhook.send(message);
-                } catch (club.minnced.discord.webhook.exception.HttpException ex2) {
-                    // If there's still an error, something is seriously wrong
-                    logger.error("Unable to send chat webhook message!");
-                }
-
-                // Don't bother trying to clean up other webhooks. We don't want to cause
-                // more issues, especially if there's multiple instances of this plugin
-                // trying to compete. When we restart, we'll clean it all up anyway.
+        // Try to fetch an existing webhook for this user
+        if (webhooks.containsKey(username)) {
+            webhookSendMessage(webhooks.get(username), message);
+        } else {
+            chatChannel.createWebhook(username).queue(newWebhook -> {
+                webhookSendMessage(newWebhook, message);
+                webhooks.put(username, newWebhook);
             });
+        }
+
+        // Send the message to the webhook
+//        try (WebhookClient chatWebhook = WebhookClient.withUrl(chatWebhookUrl)) {
+//            chatWebhook.send(message);
+//        } catch (club.minnced.discord.webhook.exception.HttpException ex) {
+//            // If there's an error, create a new webhook, assuming our old one was removed
+//            chatChannel.createWebhook("Chat Relay Webhook").queue(newWebhook -> {
+//                chatWebhookUrl = newWebhook.getUrl();
+//                try (WebhookClient chatWebhook = WebhookClient.withUrl(chatWebhookUrl)) {
+//                    chatWebhook.send(message);
+//                } catch (club.minnced.discord.webhook.exception.HttpException ex2) {
+//                    // If there's still an error, something is seriously wrong
+//                    logger.error("Unable to send chat webhook message!");
+//                }
+//
+//                // Don't bother trying to clean up other webhooks. We don't want to cause
+//                // more issues, especially if there's multiple instances of this plugin
+//                // trying to compete. When we restart, we'll clean it all up anyway.
+//            });
+//        }
+
+//        chatChannel.createWebhook("Chat Relay Webhook").queue(newWebhook -> {
+//            webhook = newWebhook;
+//            try (WebhookClient chatWebhook = WebhookClient.withUrl(newWebhook.getUrl())) {
+//                chatWebhook.send(message).whenComplete((readonlyMessage, throwable) -> {
+//                    webhook.delete().queue();
+//                });
+//            } catch (club.minnced.discord.webhook.exception.HttpException ex2) {
+//                // If there's still an error, something is seriously wrong
+//                logger.error("Unable to send chat webhook message!");
+//            }
+//        });
+    }
+
+    private void webhookSendMessage(Webhook webhook, WebhookMessage message) {
+        try (WebhookClient chatWebhook = WebhookClient.withUrl(webhook.getUrl())) {
+            chatWebhook.send(message);
+        } catch (club.minnced.discord.webhook.exception.HttpException ex2) {
+            logger.error("Unable to send chat webhook message!");
         }
     }
 
-    private WebhookMessageBuilder addFooterToWebhookMessage(WebhookMessageBuilder messageBuilder, WebhookEmbedBuilder embedBuilder, PlayerPlatform.Platform platform) {
+    private WebhookMessageBuilder addFooterToWebhookMessage(WebhookMessageBuilder messageBuilder, WebhookEmbedBuilder embedBuilder, PlayerPlatform.Platform platform, String title) {
         WebhookMessageBuilder originalMessageBuilder = messageBuilder;
 
         if (platform != null) {
@@ -186,11 +214,17 @@ public class DiscordBot extends ListenerAdapter {
 
                 // Now that we've got an InputStream for the platform icon, create and add the footer
 
+                // Mobile Discord notifications like to show the name of this attachment instead of the
+                // actual message. To work around this, we set the filename to the message title, but we
+                // have to add ".png" at the end for Discord to allow us to attach it as the footer icon.
+                title += "    |    "; // Visually separate description and suffix below
+                title += "icon.png"; // Add suffix
+
                 // Attach the footer icon to the message
-                messageBuilder = messageBuilder.addFile("footericon.png", platformIconInputStream);
+                messageBuilder = messageBuilder.addFile(title, platformIconInputStream);
                 // Add the attached image to the footer
                 embedBuilder.setFooter(new WebhookEmbed.EmbedFooter(
-                        "Currently playing on " + platform, "attachment://footericon.png"
+                        "Currently playing on " + platform, "attachment://"+title
                 ));
             } catch (IOException ignored) {
                 // If we can't read the footer image, just return the original,
@@ -218,6 +252,7 @@ public class DiscordBot extends ListenerAdapter {
             throw new RuntimeException("Invalid Discord channel ID");
         }
 
+        /*
         // Set up the webhook for the channel
         chatChannel.createWebhook("Chat Relay Webhook").queue(newWebhook -> {
             chatWebhookUrl = newWebhook.getUrl();
@@ -239,12 +274,26 @@ public class DiscordBot extends ListenerAdapter {
                 })
             );
         });
+        */
+        // Remove any leftover webhooks we've previously created
+        Objects.requireNonNull(chatChannel).retrieveWebhooks().queue(webhooks ->
+            webhooks.forEach(webhook -> {
+                // We only want to delete INCOMING webhooks
+                if (webhook.getType() != WebhookType.INCOMING) return;
+                // We only want to delete webhooks we can identify the owner of
+                if (webhook.getOwner() == null) return;
+                // We only want to delete webhooks we created
+                if (!jda.getSelfUser().getId().equals(webhook.getOwner().getId())) return;
+
+                webhook.delete().queue();
+            })
+        );
 
         // Remove any old Discord commands
         jda.retrieveCommands().queue(commands ->
-                commands.forEach(command ->
-                        command.delete().queue()
-                )
+            commands.forEach(command ->
+                command.delete().queue()
+            )
         );
 
         // Find the "account linked" role, if set
