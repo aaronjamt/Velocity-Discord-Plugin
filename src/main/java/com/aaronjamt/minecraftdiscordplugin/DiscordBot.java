@@ -302,10 +302,10 @@ public class DiscordBot extends ListenerAdapter {
             try {
                 accountLinkedRole = jda.getRoleById(config.discordAccountLinkedRole);
                 if (accountLinkedRole == null) {
-                    logger.warn("No Discord role found for ID: "+roleId);
+                    logger.warn("No Discord role found for ID: {}", roleId);
                 }
             } catch (Exception ex) {
-                logger.warn("Unable to find Discord account linked role: "+ex);
+                logger.warn("Unable to find Discord account linked role: {}", ex.toString());
             }
         }
     }
@@ -499,29 +499,30 @@ public class DiscordBot extends ListenerAdapter {
         // Ignore messages to a different channel
         if (!event.getChannel().getId().equals(config.discordBotChannel)) return;
 
-        /*
-        logger.info("{} ({}) [@{} # {}] in {}: {}",
-                event.getMember().getEffectiveName(),
-                event.getAuthor().getGlobalName(),
-                event.getAuthor().getName(),
-                event.getAuthor().getId(),
-                event.getMessage().getChannel().getName(),
-                event.getMessage().getContentDisplay()
-        );
-        */
+        String message = event.getMessage().getContentDisplay();
 
         // If there's any attachments, add that information to the message
         int numAttachments = event.getMessage().getAttachments().size();
-        String attachmentsMsg = "";
         if (numAttachments > 0) {
             // If there's an actual message, add a space to separate the attachments suffix from the message
-            if (!event.getMessage().getContentDisplay().isEmpty()) attachmentsMsg = " ";
-            attachmentsMsg += "[" + numAttachments + " attachment" + (numAttachments == 1 ? "" : "s") + "]";
+            if (!event.getMessage().getContentDisplay().isEmpty()) message += " ";
+            message += "[" + numAttachments + " attachment" + (numAttachments == 1 ? "" : "s") + "]";
+        }
+
+        if (message.isEmpty()) {
+            logger.warn("Empty message from {} ({}) [@{} # {}] in {}",
+                    event.getMember().getEffectiveName(),
+                    event.getAuthor().getGlobalName(),
+                    event.getAuthor().getName(),
+                    event.getAuthor().getId(),
+                    event.getMessage().getChannel().getName()
+            );
+            return;
         }
 
         chatMessageCallback.accept(new ChatMessage(
                 event.getAuthor().getId(),
-                event.getMessage().getContentDisplay() + attachmentsMsg,
+                message,
                 event.getChannel().getName(),
                 true
         ));
@@ -643,10 +644,6 @@ public class DiscordBot extends ListenerAdapter {
 
     public void sendAnnouncement(Color highlightColor, String message, String playerName, String playerIcon, PlayerPlatform.Platform platform) {
         sendAnnouncement(highlightColor, message, null,  playerName, playerIcon, null, null, platform);
-}
-
-    public void sendAnnouncement(String message) {
-        sendAnnouncement(null, message, null, null, null);
     }
 
     public void sendAnnouncementSync(String message) {
