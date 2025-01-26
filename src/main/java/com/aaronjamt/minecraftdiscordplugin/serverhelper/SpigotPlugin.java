@@ -9,6 +9,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerAdvancementDoneEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -84,5 +85,11 @@ public class SpigotPlugin extends JavaPlugin implements Listener {
         out.writeUTF(info.getDescription());
 
         player.sendPluginMessage(this, Constants.COMMUNICATION_CHANNEL, out.toByteArray());
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onPlayerChat(AsyncPlayerChatEvent event) {
+        // Prevent the message from actually making it through
+        event.setCancelled(true);
     }
 }
