@@ -129,17 +129,17 @@ public class PlayerPlatform {
      */
 
     public enum Platform {
-        // TODO: Find a better way to store the
+        // TODO: Find a better way to store these
         BEDROCK_GENERIC("Unknown", "Bedrock", "bedrock"),
         ANDROID("Android", null, "android"),
         IOS("iOS", null, "ios"),
         OSX("macOS", null, "macos"),
-        AMAZON("Amazon", "Amazon Fire ??", "amazon_fire"),
+        AMAZON("Amazon", "Amazon Fire", "amazon_fire"),
         GEARVR("Gear VR", null, "gear_vr"),
         HOLOLENS("Hololens", "Microsoft Hololens", "hololens"),
         UWP("Windows", "Windows (Microsoft Store)", "windows"),
         WIN32("Windows x86", "Windows (EXE))", "windows"),
-        DEDICATED("Dedicated", "Dedicated ??", "unknown"),
+        DEDICATED("Dedicated", "Dedicated", "unknown"),
         TVOS("Apple TV", null, "apple_tv"),
         PS4("PS4", "PlayStation", "playstation"),
         NX("Switch", "Nintendo Switch", "nx"),

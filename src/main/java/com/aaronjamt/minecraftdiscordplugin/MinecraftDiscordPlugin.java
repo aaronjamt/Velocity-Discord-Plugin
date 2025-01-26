@@ -253,7 +253,6 @@ public class MinecraftDiscordPlugin  {
 
         // Send message to all Minecraft clients, but not the backend server(s)
         sendChatMessage(new ChatMessage(playerUuid, message, serverName, false));
-        event.setResult(PlayerChatEvent.ChatResult.denied());
 
         // Get player head URL
         String mcIcon = String.format("https://heads.discordsrv.com/head.png?texture=%s&uuid=%s&name=%s&overlay", "", playerUuid.replaceAll("-",""), playerName);
@@ -267,17 +266,14 @@ public class MinecraftDiscordPlugin  {
         // TODO: This should probably have a config option and/or be configurable per-user and/or per-Discord-account
         message = discordBot.replaceMentions(message);
 
-        // Get Minecraft platform and associated icon
-        //PlayerPlatform.Platform platform = playerPlatform.getPlayerPlatform(player);
-        // Having the platform information in the footer of every single message seems overly verbose.
-        // The foundation is there to allow this, but for now I'm disabling it.
-        PlayerPlatform.Platform platform = null;
-
         // Send message to Discord
-        discordBot.chatWebhookSendMessage(discordName, discordIcon, playerName, mcIcon, null, null, null, message, platform, null);
+        discordBot.chatWebhookSendMessage(discordName, discordIcon, playerName, mcIcon, null, null, null, message, null, null);
+
+        // Prevent forwarding to the backend server
+        event.setResult(PlayerChatEvent.ChatResult.denied());
     }
 
-    @Subscribe(order = PostOrder.FIRST)
+    @Subscribe
     public void onPluginMessageFromBackend(PluginMessageEvent event) {
         logger.info("Plugin message from backend!");
         if (!(event.getSource() instanceof ServerConnection backend)) {
