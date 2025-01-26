@@ -148,6 +148,9 @@ public class MinecraftDiscordPlugin  {
     public void onProxyInitialization(ProxyInitializeEvent event) {
         // Register for Bungeecord-compatible plugin messages
         server.getChannelRegistrar().register(CHANNEL_IDENTIFIER);
+
+        // Send startup alert
+        discordBot.startup();
     }
 
     @Subscribe
@@ -400,6 +403,9 @@ public class MinecraftDiscordPlugin  {
         } else {
             finalMessage = config.minecraftMessageTemplate.replace("{server}", message.server);
         }
+
+//        String playerHeadUrl = String.format(config.minecraftHeadURL, mcUUID, mcName);
+//        String discordAvatarUrl = discordBot.getUserIconFromID(discId);
 
         finalMessage = finalMessage
                 .replace("{minecraftUsername}", mcName)

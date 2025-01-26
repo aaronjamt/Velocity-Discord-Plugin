@@ -83,6 +83,11 @@ public class DiscordBot extends ListenerAdapter {
         }
     }
 
+    public void startup() {
+        // Send the announcement that we're online
+        chatChannel.sendMessageEmbeds(new EmbedBuilder().setTitle(config.serverStartedMessage).build()).queue();
+    }
+
     public void shutdown() {
         jda.shutdown();
     }
@@ -233,10 +238,6 @@ public class DiscordBot extends ListenerAdapter {
                     }
                 })
             );
-
-            // Send the announcement that we're online
-            // TODO: Is there a better way to do this? Maybe queue sent Discord messages until we're online, then just send this from the main plugin class?
-            sendAnnouncement(config.serverStartedMessage);
         });
 
         // Remove any old Discord commands
