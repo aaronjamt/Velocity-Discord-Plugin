@@ -545,6 +545,7 @@ public class DiscordBot extends ListenerAdapter {
         if (!event.getRoles().contains(accountLinkedRole)) return;
 
         // If the user lost their "account linked" role, kick them from the server
+        logger.warn("Player lost their Discord role, kicking from Minecraft server.");
         player.get().disconnect(Component.text(config.discordUserLeftServerMessage));
     }
 
@@ -562,6 +563,7 @@ public class DiscordBot extends ListenerAdapter {
         if (player.isEmpty()) return;
 
         // Kick the player
+        logger.warn("Player left Discord server, kicking from Minecraft server.");
         player.get().disconnect(Component.text(config.discordUserLeftServerMessage));
     }
 
@@ -700,8 +702,15 @@ public class DiscordBot extends ListenerAdapter {
     public boolean isMemberLinkedInServer(String discordID) {
         Member discordMember = guild.getMember(UserSnowflake.fromId(discordID));
         // Check if they're in the server
-        if (discordMember == null) return false;
+        if (discordMember == null) {
+            logger.warn("Player is not a member of the Discord server.");
+            return false;
+        }
         // Check if they have the "account linked" role
-        return discordMember.getRoles().contains(accountLinkedRole);
+        if (discordMember.getRoles().contains(accountLinkedRole)) return true;
+        else {
+            logger.warn("Player does not have the Discord role to be allowed to join.");
+            return false;
+        }
     }
 }
