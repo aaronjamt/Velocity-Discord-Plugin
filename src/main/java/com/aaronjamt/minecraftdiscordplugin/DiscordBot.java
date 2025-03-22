@@ -6,6 +6,7 @@ import club.minnced.discord.webhook.send.WebhookEmbedBuilder;
 import club.minnced.discord.webhook.send.WebhookMessage;
 import club.minnced.discord.webhook.send.WebhookMessageBuilder;
 import com.velocitypowered.api.proxy.Player;
+import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRoleRemoveEvent;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
@@ -565,6 +566,14 @@ public class DiscordBot extends ListenerAdapter {
         // Kick the player
         logger.warn("Player left Discord server, kicking from Minecraft server.");
         player.get().disconnect(Component.text(config.discordUserLeftServerMessage));
+    }
+
+    @Override
+    public void onGuildMemberJoin(@NotNull GuildMemberJoinEvent event) {
+        super.onGuildMemberJoin(event);
+
+        // Refresh guild members cache whenever a new member joins
+        new Thread(() -> guild.loadMembers().get()).start();
     }
 
     private void onPrivateMessageReceived(MessageReceivedEvent event) {
